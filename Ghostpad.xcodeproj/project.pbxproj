@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA00000000000000000000D3 /* NotesCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000D2 /* NotesCore */; };
 		2FA2797A2FD27A7A0010F74E /* GhostpadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA279792FD27A7A0010F74E /* GhostpadApp.swift */; };
 		AA00000000000000000000C2 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B2 /* Note.swift */; };
 		AA00000000000000000000C3 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B3 /* EditorViewModel.swift */; };
@@ -35,6 +36,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA00000000000000000000D3 /* NotesCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +139,9 @@
 			dependencies = (
 			);
 			name = Ghostpad;
+			packageProductDependencies = (
+				AA00000000000000000000D2 /* NotesCore */,
+			);
 			productName = Ghostpad;
 			productReference = 2FA279762FD27A7A0010F74E /* Ghostpad.app */;
 			productType = "com.apple.product-type.application";
@@ -165,6 +170,9 @@
 				Base,
 			);
 			mainGroup = 2FA2796D2FD27A7A0010F74E;
+			packageReferences = (
+				AA00000000000000000000D1 /* XCLocalSwiftPackageReference "Packages/NotesCore" */,
+			);
 			productRefGroup = 2FA279772FD27A7A0010F74E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -399,6 +407,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AA00000000000000000000D1 /* XCLocalSwiftPackageReference "Packages/NotesCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NotesCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA00000000000000000000D2 /* NotesCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NotesCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2FA2796E2FD27A7A0010F74E /* Project object */;
 }
