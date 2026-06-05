@@ -8,7 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		2FA2797A2FD27A7A0010F74E /* GhostpadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA279792FD27A7A0010F74E /* GhostpadApp.swift */; };
-		2FA2797C2FD27A7A0010F74E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA2797B2FD27A7A0010F74E /* ContentView.swift */; };
+		AA00000000000000000000C2 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B2 /* Note.swift */; };
+		AA00000000000000000000C3 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B3 /* EditorViewModel.swift */; };
+		AA00000000000000000000C4 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B4 /* EditorView.swift */; };
+		AA00000000000000000000C5 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B5 /* FloatingPanel.swift */; };
 		2FA2797E2FD27A7B0010F74E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2FA2797D2FD27A7B0010F74E /* Assets.xcassets */; };
 		2FA279812FD27A7B0010F74E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2FA279802FD27A7B0010F74E /* Preview Assets.xcassets */; };
 		2FA279892FD378590010F74E /* CLAUDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 2FA279882FD378590010F74E /* CLAUDE.md */; };
@@ -17,7 +20,10 @@
 /* Begin PBXFileReference section */
 		2FA279762FD27A7A0010F74E /* Ghostpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ghostpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2FA279792FD27A7A0010F74E /* GhostpadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostpadApp.swift; sourceTree = "<group>"; };
-		2FA2797B2FD27A7A0010F74E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AA00000000000000000000B2 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
+		AA00000000000000000000B3 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
+		AA00000000000000000000B4 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		AA00000000000000000000B5 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
 		2FA2797D2FD27A7B0010F74E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2FA279802FD27A7B0010F74E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		2FA279822FD27A7B0010F74E /* Ghostpad.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ghostpad.entitlements; sourceTree = "<group>"; };
@@ -54,14 +60,57 @@
 		2FA279782FD27A7A0010F74E /* Ghostpad */ = {
 			isa = PBXGroup;
 			children = (
-				2FA279792FD27A7A0010F74E /* GhostpadApp.swift */,
-				2FA2797B2FD27A7A0010F74E /* ContentView.swift */,
+				AA00000000000000000000A1 /* App */,
+				AA00000000000000000000A2 /* Models */,
+				AA00000000000000000000A3 /* ViewModels */,
+				AA00000000000000000000A4 /* Views */,
+				AA00000000000000000000A5 /* Window */,
 				2FA2797D2FD27A7B0010F74E /* Assets.xcassets */,
 				2FA279822FD27A7B0010F74E /* Ghostpad.entitlements */,
 				2FA2797F2FD27A7B0010F74E /* Preview Content */,
 				2FA279882FD378590010F74E /* CLAUDE.md */,
 			);
 			path = Ghostpad;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000A1 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2FA279792FD27A7A0010F74E /* GhostpadApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000A2 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000B2 /* Note.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000A3 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000B3 /* EditorViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000A4 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000B4 /* EditorView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000A5 /* Window */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000B5 /* FloatingPanel.swift */,
+			);
+			path = Window;
 			sourceTree = "<group>";
 		};
 		2FA2797F2FD27A7B0010F74E /* Preview Content */ = {
@@ -143,8 +192,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2FA2797C2FD27A7A0010F74E /* ContentView.swift in Sources */,
 				2FA2797A2FD27A7A0010F74E /* GhostpadApp.swift in Sources */,
+				AA00000000000000000000C2 /* Note.swift in Sources */,
+				AA00000000000000000000C3 /* EditorViewModel.swift in Sources */,
+				AA00000000000000000000C4 /* EditorView.swift in Sources */,
+				AA00000000000000000000C5 /* FloatingPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
