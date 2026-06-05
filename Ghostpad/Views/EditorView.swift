@@ -22,7 +22,7 @@ struct EditorView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 6)
 
-            TextEditor(text: $viewModel.note.text)
+            TextEditor(text: $viewModel.note.body)
                 .font(.system(size: 16))
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 12)
