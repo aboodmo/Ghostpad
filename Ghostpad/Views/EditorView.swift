@@ -4,8 +4,8 @@
 //
 //  The floating panel's content: a top toolbar (sidebar toggle sits beside the
 //  traffic lights, à la Apple Notes), an optional note sidebar, and the editor.
-//  Edits the active note via a direct binding into the NoteStore; opacity is
-//  presentation state, persisted via @AppStorage.
+//  Edits the active note via a direct binding into the NoteStore; opacity and
+//  theme are presentation state, persisted via @AppStorage.
 //
 
 import SwiftUI
@@ -15,6 +15,7 @@ struct EditorView: View {
     @ObservedObject var store: NoteStore
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
     @AppStorage("editorFontSize") private var fontSize: Double = 15
+    @AppStorage("theme") private var themeRaw: String = Theme.charcoal.rawValue
 
     @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
@@ -26,6 +27,8 @@ struct EditorView: View {
 
     private let cornerRadius: CGFloat = 12
     private let sidebarWidth: CGFloat = 184
+
+    private var theme: Theme { Theme(rawValue: themeRaw) ?? .charcoal }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,11 +44,11 @@ struct EditorView: View {
                 editor
             }
         }
-        .background(Color.black.opacity(opacity))
+        .background(theme.background.opacity(opacity))
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                .strokeBorder(theme.text.opacity(0.10), lineWidth: 1)
         )
         .background(shortcutButtons)
         .alert(
@@ -76,7 +79,7 @@ struct EditorView: View {
 
             Slider(value: $opacity, in: 0.1...1.0)
                 .controlSize(.mini)
-                .tint(.white)
+                .tint(theme.text)
                 .frame(width: 64)
                 .opacity(0.55)
 
@@ -93,7 +96,7 @@ struct EditorView: View {
         .padding(.leading, 76)
         .padding(.trailing, 12)
         .frame(height: 32)
-        .foregroundColor(.white.opacity(0.85))
+        .foregroundColor(theme.text.opacity(0.85))
     }
 
     private func toolbarButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
@@ -115,7 +118,7 @@ struct EditorView: View {
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .foregroundColor(.white)
+            .foregroundColor(theme.text)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -166,7 +169,7 @@ struct EditorView: View {
             }
             Text(snippet(of: note))
                 .font(.system(size: 11))
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(theme.text.opacity(0.5))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -175,7 +178,7 @@ struct EditorView: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isActive ? Color.white.opacity(0.16) : Color.clear)
+                .fill(isActive ? theme.text.opacity(0.16) : Color.clear)
         )
         .contentShape(Rectangle())
         .onTapGesture { store.setActive(id: note.id) }
@@ -185,7 +188,7 @@ struct EditorView: View {
             }
             Button("Delete", role: .destructive) { notePendingDelete = note }
         }
-        .foregroundColor(.white)
+        .foregroundColor(theme.text)
     }
 
     /// First body line after the title line, used as the row's preview.
@@ -202,19 +205,19 @@ struct EditorView: View {
 
     private var sidebarBackground: some View {
         ZStack {
-            Color.black.opacity(opacity)
-            Color.white.opacity(0.05)
+            theme.background.opacity(opacity)
+            theme.text.opacity(0.05)
         }
     }
 
     // MARK: - Decorations
 
     private var hairline: some View {
-        Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+        Rectangle().fill(theme.text.opacity(0.08)).frame(height: 1)
     }
 
     private var vHairline: some View {
-        Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1)
+        Rectangle().fill(theme.text.opacity(0.08)).frame(width: 1)
     }
 
     // MARK: - Shortcuts (keys without a visible control live here)

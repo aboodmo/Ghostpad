@@ -12,10 +12,16 @@ struct SettingsView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
     @AppStorage("editorFontSize") private var fontSize: Double = 15
     @AppStorage("alwaysOnTop") private var alwaysOnTop: Bool = true
+    @AppStorage("theme") private var themeRaw: String = Theme.charcoal.rawValue
 
     var body: some View {
         Form {
             Section("Appearance") {
+                Picker("Theme", selection: $themeRaw) {
+                    ForEach(Theme.allCases) { theme in
+                        Text(theme.name).tag(theme.rawValue)
+                    }
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Opacity: \(Int((opacity * 100).rounded()))%")
                     Slider(value: $opacity, in: 0.1...1.0)
@@ -29,7 +35,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 380, height: 240)
+        .frame(width: 380, height: 300)
     }
 }
 

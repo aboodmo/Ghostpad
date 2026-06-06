@@ -16,7 +16,8 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 - Collapsible left sidebar (toolbar toggle or ⌘B, hidden by default): rows show title + preview line, click to switch, new note (⌘N / toolbar), delete (⌘⌫ / context menu) with confirmation
 - Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, subtle ◆ indicator
 - Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Settings…, Quit; closing the panel hides it instead of quitting
-- Settings window (toolbar gear, menu, or `⌘,`): opacity, editor font size, always-on-top; `SettingsView` is hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene, so it can open programmatically and sit above the always-on-top panel); values stored via `@AppStorage` and applied live
+- Settings window (toolbar gear, menu, or `⌘,`): theme, opacity, editor font size, always-on-top; `SettingsView` is hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene, so it can open programmatically and sit above the always-on-top panel); values stored via `@AppStorage` and applied live
+- Color themes (`Theme` enum in the view layer; palettes from canonical sources — Dracula, Nord, Tokyo Night, Catppuccin Mocha/Latte, Gruvbox, Solarized Dark/Light, One Dark, Everforest, Rosé Pine, Monokai, plus Charcoal/Sepia/Light): each defines a background + text color (`Color(hex:)` helper); `EditorView` derives all tints from the active theme so dark and light themes both work
 - App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
 - No global (system-wide) hotkeys yet
 
