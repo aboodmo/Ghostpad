@@ -79,6 +79,15 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Accent for the rare, meaningful highlight (the active note). Most themes
+    /// stay monochrome (accent == text); Vapor gets its cold electric blue.
+    var accent: Color {
+        switch self {
+        case .vapor: return Color(hex: 0x6EA8FF)
+        default:     return text
+        }
+    }
+
     /// Primary text/content color. Secondary tints derive from this.
     var text: Color {
         switch self {

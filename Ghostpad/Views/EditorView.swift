@@ -20,6 +20,10 @@ struct EditorView: View {
     @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
 
+    // Drives "breathing focus": .key when the panel is frontmost, dimmer otherwise.
+    @Environment(\.controlActiveState) private var activeState
+    private var isFocused: Bool { activeState == .key }
+
     init(store: NoteStore, showSidebar: Bool = false) {
         _store = ObservedObject(wrappedValue: store)
         _showSidebar = State(initialValue: showSidebar)
@@ -44,12 +48,16 @@ struct EditorView: View {
                 editor
             }
         }
+        // Breathing focus: content settles back when the panel isn't key and
+        // sharpens when you click in.
+        .opacity(isFocused ? 1.0 : 0.88)
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(theme.text.opacity(0.10), lineWidth: 1)
+                .strokeBorder(theme.text.opacity(isFocused ? 0.16 : 0.07), lineWidth: 1)
         )
+        .animation(.easeInOut(duration: 0.45), value: isFocused)
         .background(shortcutButtons)
         .alert(
             "Delete note?",
@@ -77,11 +85,7 @@ struct EditorView: View {
 
             Spacer(minLength: 8)
 
-            Slider(value: $opacity, in: 0.1...1.0)
-                .controlSize(.mini)
-                .tint(theme.text)
-                .frame(width: 64)
-                .opacity(0.55)
+            FogDial(opacity: $opacity, tint: theme.text)
 
             toolbarButton(systemName: "gearshape", help: "Settings (⌘,)") {
                 NotificationCenter.default.post(name: .ghostpadOpenSettings, object: nil)
@@ -117,6 +121,7 @@ struct EditorView: View {
             .font(.system(size: fontSize, design: .serif))
             .lineSpacing(5)
             .scrollContentBackground(.hidden)
+            .scrollIndicators(.never)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .foregroundColor(theme.text)
@@ -149,47 +154,19 @@ struct EditorView: View {
         ScrollView {
             LazyVStack(spacing: 2) {
                 ForEach(sortedNotes) { note in
-                    noteRow(note)
+                    NoteRow(
+                        note: note,
+                        isActive: note.id == store.activeNoteID,
+                        theme: theme,
+                        snippet: snippet(of: note),
+                        onTap: { store.setActive(id: note.id) },
+                        onTogglePin: { store.setPinned(!note.isPinned, id: note.id) },
+                        onDelete: { notePendingDelete = note }
+                    )
                 }
             }
-            .padding(6)
+            .padding(8)
         }
-    }
-
-    private func noteRow(_ note: Note) -> some View {
-        let isActive = note.id == store.activeNoteID
-        return VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
-                if note.isPinned {
-                    Text("◆").font(.system(size: 7)).opacity(0.6)
-                }
-                Text(note.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            Text(snippet(of: note))
-                .font(.system(size: 11))
-                .foregroundColor(theme.text.opacity(0.5))
-                .lineLimit(1)
-                .truncationMode(.tail)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isActive ? theme.text.opacity(0.16) : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture { store.setActive(id: note.id) }
-        .contextMenu {
-            Button(note.isPinned ? "Unpin" : "Pin") {
-                store.setPinned(!note.isPinned, id: note.id)
-            }
-            Button("Delete", role: .destructive) { notePendingDelete = note }
-        }
-        .foregroundColor(theme.text)
     }
 
     /// First body line after the title line, used as the row's preview.
@@ -212,13 +189,11 @@ struct EditorView: View {
 
     // MARK: - Decorations
 
-    /// Behind-window blur with the theme tint on top; the tint follows opacity
-    /// while the blur stays, keeping text legible over a busy background.
+    /// Just the theme tint at the slider's opacity — genuinely see-through, so
+    /// the person/screen behind the panel stays clearly visible. Text keeps its
+    /// full strength (only the backing fades), so notes stay readable.
     private var panelBackground: some View {
-        ZStack {
-            VisualEffectBackground()
-            theme.background.opacity(opacity)
-        }
+        theme.background.opacity(opacity)
     }
 
     private var hairline: some View {
@@ -250,6 +225,163 @@ struct EditorView: View {
 
     private func nudge(_ delta: Double) {
         opacity = min(1.0, max(0.1, opacity + delta))
+    }
+}
+
+// MARK: - Sidebar row
+
+/// A single note in the sidebar. The active note is marked by a thin accent
+/// edge bar (reserved width, so selection never shifts the layout) and a soft
+/// fill; hovering lifts the row a touch for tactile feedback.
+private struct NoteRow: View {
+    let note: Note
+    let isActive: Bool
+    let theme: Theme
+    let snippet: String
+    let onTap: () -> Void
+    let onTogglePin: () -> Void
+    let onDelete: () -> Void
+
+    @State private var hovering = false
+
+    private var fill: Color {
+        if isActive { return theme.text.opacity(0.13) }
+        if hovering { return theme.text.opacity(0.06) }
+        return .clear
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                .fill(theme.accent)
+                .frame(width: 2.5)
+                .opacity(isActive ? 1 : 0)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    if note.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8))
+                            .rotationEffect(.degrees(40))
+                            .foregroundColor(theme.accent.opacity(0.85))
+                    }
+                    Text(note.title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                Text(snippet)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.text.opacity(0.45))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 7)
+        .padding(.leading, 6)
+        .padding(.trailing, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(fill)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .contextMenu {
+            Button(note.isPinned ? "Unpin" : "Pin", action: onTogglePin)
+            Button("Delete", role: .destructive, action: onDelete)
+        }
+        .foregroundColor(theme.text)
+    }
+}
+
+/// Transparent AppKit backing that tells the window "a drag here is not a
+/// window move." Placed under the fog dial so dragging it slides the value
+/// instead of dragging the whole panel (which is movable by its background).
+/// It doesn't override hit-testing or mouse handling, so SwiftUI's drag gesture
+/// still receives the events via the responder chain.
+private struct NonWindowDragging: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { _View() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class _View: NSView {
+        override var mouseDownCanMoveWindow: Bool { false }
+    }
+}
+
+// MARK: - Fog dial
+
+/// The opacity control, reimagined as "clearing fog": a slim frosted track
+/// whose fill recedes as opacity drops, with a soft knob and a monospaced %
+/// that surfaces only while you interact. Drives the same $opacity binding the
+/// rest of the app reads, so ⌘↑/⌘↓ and Settings stay in sync.
+private struct FogDial: View {
+    @Binding var opacity: Double
+    var tint: Color
+
+    @State private var dragging = false
+    @State private var hovering = false
+
+    private let range: ClosedRange<Double> = 0.1...1.0
+    private let trackWidth: CGFloat = 86
+    private let knob: CGFloat = 11
+
+    private var fraction: CGFloat {
+        CGFloat((opacity - range.lowerBound) / (range.upperBound - range.lowerBound))
+    }
+
+    private var revealed: Bool { dragging || hovering }
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Text("\(Int((opacity * 100).rounded()))%")
+                .font(.system(size: 10, weight: .medium, design: .rounded).monospacedDigit())
+                .foregroundColor(tint.opacity(0.75))
+                .lineLimit(1)
+                .fixedSize()
+                .opacity(revealed ? 1 : 0)
+                .frame(width: 34, alignment: .trailing)
+
+            track
+        }
+        .background(NonWindowDragging())
+        .animation(.easeOut(duration: 0.18), value: revealed)
+        .onHover { hovering = $0 }
+        .help("Opacity (⌘↑ / ⌘↓)")
+    }
+
+    private var track: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let x = w * fraction
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(tint.opacity(0.12))
+                Capsule(style: .continuous)
+                    .fill(tint.opacity(revealed ? 0.55 : 0.4))
+                    .frame(width: max(knob, x))
+                Circle()
+                    .fill(tint.opacity(0.95))
+                    .frame(width: dragging ? knob + 2 : knob, height: dragging ? knob + 2 : knob)
+                    .shadow(color: .black.opacity(0.35), radius: dragging ? 4 : 2, y: 1)
+                    .offset(x: x - (dragging ? (knob + 2) : knob) / 2)
+            }
+            .frame(height: geo.size.height)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        dragging = true
+                        let f = min(1, max(0, value.location.x / w))
+                        opacity = range.lowerBound + Double(f) * (range.upperBound - range.lowerBound)
+                    }
+                    .onEnded { _ in dragging = false }
+            )
+        }
+        .frame(width: trackWidth, height: 14)
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: dragging)
     }
 }
 
