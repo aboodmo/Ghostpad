@@ -5,14 +5,15 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 ## Stack
 - SwiftUI + AppKit (NSPanel for the floating window)
 - macOS 14+, Swift 5.9+
-- No external dependencies yet
-- Notes stored as `.md` files on disk (location TBD)
-- Model layer will live in a `NotesCore` Swift package (not added yet)
+- Model layer lives in the `NotesCore` local Swift package (macOS 14 / iOS 17), depended on by the app target
+- Notes persisted as one `.md` file per note in `Application Support/Ghostpad/notes/`, each with a small `<uuid>.json` sidecar for timestamps
 
 ## Current state
-- One floating transparent NSPanel with a basic SwiftUI TextEditor
-- Hardcoded 0.6 opacity, single in-memory note
-- No persistence, no sidebar, no settings, no hotkeys yet
+- Floating transparent NSPanel hosting a SwiftUI TextEditor
+- Live opacity slider (0.1–1.0, default 0.6) at the top; persisted via `@AppStorage`; ⌘↑/⌘↓ nudge ±0.05
+- Notes persisted to disk as Markdown + JSON sidecar (see Stack); single active note loaded on launch, edits debounced 500ms before save
+- MVVM layout: `App/`, `ViewModels/`, `Views/`, `Window/`, `Storage/` in the app target; `Note` + `NoteStorage` in `NotesCore`
+- No sidebar/multi-note, settings, or global hotkeys yet
 
 ## Conventions
 - Small commits, one logical change each. Conventional commit prefixes (feat:, fix:, chore:, refactor:).
@@ -22,9 +23,9 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 - Explain non-obvious decisions in 1-2 sentences before writing code.
 
 ## Roadmap (rough)
-1. Opacity slider (live adjustable)
-2. Persist notes to disk as .md files
-3. Multiple notes + sidebar/picker
+1. Opacity slider (live adjustable) — ✅ done
+2. Persist notes to disk as .md files — ✅ done
+3. Multiple notes + sidebar/picker — 🚧 in progress
 4. Menu bar extra (app lives in menu bar, no dock icon)
 5. Global hotkey to show/hide
 6. Settings window
