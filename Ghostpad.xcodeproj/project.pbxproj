@@ -15,6 +15,7 @@
 		AA00000000000000000000C8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B8 /* SettingsView.swift */; };
 		AA00000000000000000000C9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B9 /* Theme.swift */; };
 		AA00000000000000000000C5 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B5 /* FloatingPanel.swift */; };
+		AA00000000000000000000CA /* VisualEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000BA /* VisualEffectView.swift */; };
 		2FA2797E2FD27A7B0010F74E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2FA2797D2FD27A7B0010F74E /* Assets.xcassets */; };
 		2FA279812FD27A7B0010F74E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2FA279802FD27A7B0010F74E /* Preview Assets.xcassets */; };
 		2FA279892FD378590010F74E /* CLAUDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 2FA279882FD378590010F74E /* CLAUDE.md */; };
@@ -29,6 +30,7 @@
 		AA00000000000000000000B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA00000000000000000000B9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		AA00000000000000000000B5 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
+		AA00000000000000000000BA /* VisualEffectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectView.swift; sourceTree = "<group>"; };
 		2FA2797D2FD27A7B0010F74E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2FA279802FD27A7B0010F74E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		2FA279822FD27A7B0010F74E /* Ghostpad.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ghostpad.entitlements; sourceTree = "<group>"; };
@@ -109,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000B5 /* FloatingPanel.swift */,
+				AA00000000000000000000BA /* VisualEffectView.swift */,
 			);
 			path = Window;
 			sourceTree = "<group>";
@@ -205,6 +208,7 @@
 				AA00000000000000000000C8 /* SettingsView.swift in Sources */,
 				AA00000000000000000000C9 /* Theme.swift in Sources */,
 				AA00000000000000000000C5 /* FloatingPanel.swift in Sources */,
+				AA00000000000000000000CA /* VisualEffectView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

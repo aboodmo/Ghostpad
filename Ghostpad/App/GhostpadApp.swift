@@ -43,7 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         UserDefaults.standard.register(defaults: [
             "panelOpacity": 0.6,
             "editorFontSize": 15.0,
-            "alwaysOnTop": true
+            "alwaysOnTop": true,
+            "theme": Theme.vapor.rawValue
         ])
 
         // Load all notes; if none exist, create one. Activate the first.

@@ -16,6 +16,7 @@ import SwiftUI
 
 enum Theme: String, CaseIterable, Identifiable {
     // Dark
+    case vapor
     case charcoal
     case dracula
     case nord
@@ -37,6 +38,7 @@ enum Theme: String, CaseIterable, Identifiable {
 
     var name: String {
         switch self {
+        case .vapor:           return "Vapor"
         case .charcoal:        return "Charcoal"
         case .dracula:         return "Dracula"
         case .nord:            return "Nord"
@@ -58,6 +60,7 @@ enum Theme: String, CaseIterable, Identifiable {
     /// Base panel background; the opacity slider's value is applied on top.
     var background: Color {
         switch self {
+        case .vapor:           return Color(hex: 0x0E1116)
         case .charcoal:        return .black
         case .dracula:         return Color(hex: 0x282A36)
         case .nord:            return Color(hex: 0x2E3440)
@@ -79,6 +82,7 @@ enum Theme: String, CaseIterable, Identifiable {
     /// Primary text/content color. Secondary tints derive from this.
     var text: Color {
         switch self {
+        case .vapor:           return Color(hex: 0xE8ECF2)
         case .charcoal:        return .white
         case .dracula:         return Color(hex: 0xF8F8F2)
         case .nord:            return Color(hex: 0xD8DEE9)

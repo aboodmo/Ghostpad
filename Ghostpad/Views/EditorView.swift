@@ -15,7 +15,7 @@ struct EditorView: View {
     @ObservedObject var store: NoteStore
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
     @AppStorage("editorFontSize") private var fontSize: Double = 15
-    @AppStorage("theme") private var themeRaw: String = Theme.charcoal.rawValue
+    @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
 
     @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
@@ -25,10 +25,10 @@ struct EditorView: View {
         _showSidebar = State(initialValue: showSidebar)
     }
 
-    private let cornerRadius: CGFloat = 12
+    private let cornerRadius: CGFloat = 16
     private let sidebarWidth: CGFloat = 184
 
-    private var theme: Theme { Theme(rawValue: themeRaw) ?? .charcoal }
+    private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,7 +44,7 @@ struct EditorView: View {
                 editor
             }
         }
-        .background(theme.background.opacity(opacity))
+        .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -102,7 +102,7 @@ struct EditorView: View {
     private func toolbarButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
         }
@@ -114,10 +114,11 @@ struct EditorView: View {
 
     private var editor: some View {
         TextEditor(text: activeBody)
-            .font(.system(size: fontSize))
+            .font(.system(size: fontSize, design: .serif))
+            .lineSpacing(5)
             .scrollContentBackground(.hidden)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .foregroundColor(theme.text)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -203,14 +204,22 @@ struct EditorView: View {
         return "No additional text"
     }
 
+    // The whole panel already carries the blur + tint; the sidebar just adds a
+    // faint veil so it reads as a distinct plane.
     private var sidebarBackground: some View {
-        ZStack {
-            theme.background.opacity(opacity)
-            theme.text.opacity(0.05)
-        }
+        theme.text.opacity(0.04)
     }
 
     // MARK: - Decorations
+
+    /// Behind-window blur with the theme tint on top; the tint follows opacity
+    /// while the blur stays, keeping text legible over a busy background.
+    private var panelBackground: some View {
+        ZStack {
+            VisualEffectBackground()
+            theme.background.opacity(opacity)
+        }
+    }
 
     private var hairline: some View {
         Rectangle().fill(theme.text.opacity(0.08)).frame(height: 1)
