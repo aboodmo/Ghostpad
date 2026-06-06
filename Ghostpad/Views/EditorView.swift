@@ -15,7 +15,7 @@ struct EditorView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
 
     @State private var showSidebar = false
-    @State private var showingDeleteConfirm = false
+    @State private var notePendingDelete: Note?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -32,7 +32,14 @@ struct EditorView: View {
         }
         .cornerRadius(10)
         .background(shortcutButtons)
-        .alert("Delete note?", isPresented: $showingDeleteConfirm, presenting: store.activeNote) { note in
+        .alert(
+            "Delete note?",
+            isPresented: Binding(
+                get: { notePendingDelete != nil },
+                set: { if !$0 { notePendingDelete = nil } }
+            ),
+            presenting: notePendingDelete
+        ) { note in
             Button("Delete", role: .destructive) { store.delete(id: note.id) }
             Button("Cancel", role: .cancel) {}
         } message: { note in
@@ -75,8 +82,12 @@ struct EditorView: View {
 
     // MARK: - Sidebar
 
+    // Pinned first, then unpinned — each group most-recently-modified first.
     private var sortedNotes: [Note] {
-        store.notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        store.notes.sorted { a, b in
+            if a.isPinned != b.isPinned { return a.isPinned }
+            return a.modifiedAt > b.modifiedAt
+        }
     }
 
     private var sidebar: some View {
@@ -109,15 +120,27 @@ struct EditorView: View {
 
     private func noteRow(_ note: Note) -> some View {
         let isActive = note.id == store.activeNoteID
-        return Text(note.title)
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(isActive ? Color.white.opacity(0.15) : Color.clear)
-            .contentShape(Rectangle())
-            .onTapGesture { store.setActive(id: note.id) }
+        return HStack(spacing: 5) {
+            if note.isPinned {
+                Text("◆").font(.system(size: 7)).opacity(0.55)
+            }
+            Text(note.title)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(isActive ? Color.white.opacity(0.15) : Color.clear)
+        .contentShape(Rectangle())
+        .onTapGesture { store.setActive(id: note.id) }
+        .contextMenu {
+            Button(note.isPinned ? "Unpin" : "Pin") {
+                store.setPinned(!note.isPinned, id: note.id)
+            }
+            Button("Delete", role: .destructive) { notePendingDelete = note }
+        }
     }
 
     private var sidebarBackground: some View {
@@ -138,7 +161,7 @@ struct EditorView: View {
             // ⌘⌫ deletes the selected note only while the sidebar is open,
             // so it doesn't shadow delete-to-line-start in the editor.
             if showSidebar {
-                Button("") { if store.activeNote != nil { showingDeleteConfirm = true } }
+                Button("") { notePendingDelete = store.activeNote }
                     .keyboardShortcut(.delete, modifiers: .command)
             }
             Button("") { nudge(+0.05) }

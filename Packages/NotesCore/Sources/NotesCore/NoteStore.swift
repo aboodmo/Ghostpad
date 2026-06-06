@@ -64,6 +64,13 @@ public final class NoteStore: ObservableObject {
         activeNoteID = id
     }
 
+    /// Pin/unpin a note and persist immediately (a discrete action, not debounced).
+    public func setPinned(_ isPinned: Bool, id: UUID) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        notes[idx].isPinned = isPinned
+        persist(id)
+    }
+
     /// Apply an edit in memory immediately, then debounce the disk write.
     public func update(id: UUID, body: String) {
         guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }

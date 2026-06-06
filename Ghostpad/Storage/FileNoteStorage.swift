@@ -34,7 +34,8 @@ struct FileNoteStorage: NoteStorage {
                     id: id,
                     body: body,
                     createdAt: meta?.createdAt ?? Date(),
-                    modifiedAt: meta?.modifiedAt ?? Date()
+                    modifiedAt: meta?.modifiedAt ?? Date(),
+                    isPinned: meta?.isPinned ?? false
                 )
             }
         return notes.sorted { $0.modifiedAt > $1.modifiedAt }
@@ -42,7 +43,7 @@ struct FileNoteStorage: NoteStorage {
 
     func save(_ note: Note) throws {
         try note.body.write(to: bodyURL(note.id), atomically: true, encoding: .utf8)
-        let data = try JSONEncoder().encode(Metadata(createdAt: note.createdAt, modifiedAt: note.modifiedAt))
+        let data = try JSONEncoder().encode(Metadata(createdAt: note.createdAt, modifiedAt: note.modifiedAt, isPinned: note.isPinned))
         try data.write(to: metaURL(note.id), options: .atomic)
     }
 
@@ -56,6 +57,21 @@ struct FileNoteStorage: NoteStorage {
     private struct Metadata: Codable {
         let createdAt: Date
         let modifiedAt: Date
+        let isPinned: Bool
+
+        init(createdAt: Date, modifiedAt: Date, isPinned: Bool) {
+            self.createdAt = createdAt
+            self.modifiedAt = modifiedAt
+            self.isPinned = isPinned
+        }
+
+        // Sidecars written before pinning existed have no `isPinned` key.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            createdAt = try c.decode(Date.self, forKey: .createdAt)
+            modifiedAt = try c.decode(Date.self, forKey: .modifiedAt)
+            isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        }
     }
 
     private func bodyURL(_ id: UUID) -> URL { directory.appendingPathComponent("\(id.uuidString).md") }

@@ -11,9 +11,12 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 ## Current state
 - Floating transparent NSPanel hosting a SwiftUI TextEditor
 - Live opacity slider (0.1–1.0, default 0.6) at the top; persisted via `@AppStorage`; ⌘↑/⌘↓ nudge ±0.05
-- Notes persisted to disk as Markdown + JSON sidecar (see Stack); single active note loaded on launch, edits debounced 500ms before save
-- MVVM layout: `App/`, `ViewModels/`, `Views/`, `Window/`, `Storage/` in the app target; `Note` + `NoteStorage` in `NotesCore`
-- No sidebar/multi-note, settings, or global hotkeys yet
+- Notes persisted to disk as Markdown + JSON sidecar (see Stack); edits debounced 500ms before save
+- Multiple notes via `NoteStore` (`@MainActor ObservableObject` in `NotesCore`, injected with a `NoteStorage`): tracks `notes` + `activeNoteID`
+- Collapsible left sidebar (⌘B, hidden by default): note list by title, click to switch, new note (⌘N), delete (⌘⌫ / context menu) with confirmation
+- Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, subtle ◆ indicator
+- App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
+- No settings or global (system-wide) hotkeys yet
 
 ## Conventions
 - Small commits, one logical change each. Conventional commit prefixes (feat:, fix:, chore:, refactor:).
@@ -25,7 +28,7 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 ## Roadmap (rough)
 1. Opacity slider (live adjustable) — ✅ done
 2. Persist notes to disk as .md files — ✅ done
-3. Multiple notes + sidebar/picker — 🚧 in progress
+3. Multiple notes + sidebar/picker — ✅ done
 4. Menu bar extra (app lives in menu bar, no dock icon)
 5. Global hotkey to show/hide
 6. Settings window
