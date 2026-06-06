@@ -2,7 +2,8 @@
 //  EditorView.swift
 //  Ghostpad
 //
-//  The floating panel's content: an optional note sidebar plus the editor.
+//  The floating panel's content: a top toolbar (sidebar toggle sits beside the
+//  traffic lights, à la Apple Notes), an optional note sidebar, and the editor.
 //  Edits the active note via a direct binding into the NoteStore; opacity is
 //  presentation state, persisted via @AppStorage.
 //
@@ -14,23 +15,37 @@ struct EditorView: View {
     @ObservedObject var store: NoteStore
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
 
-    @State private var showSidebar = false
+    @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
 
+    init(store: NoteStore, showSidebar: Bool = false) {
+        _store = ObservedObject(wrappedValue: store)
+        _showSidebar = State(initialValue: showSidebar)
+    }
+
+    private let cornerRadius: CGFloat = 12
+    private let sidebarWidth: CGFloat = 184
+
     var body: some View {
-        HStack(spacing: 0) {
-            if showSidebar {
-                sidebar
-                    .frame(width: 160)
-                    .background(sidebarBackground)
-                    .overlay(alignment: .trailing) {
-                        Rectangle().fill(Color.white.opacity(0.12)).frame(width: 1)
-                    }
+        VStack(spacing: 0) {
+            toolbar
+            hairline
+            HStack(spacing: 0) {
+                if showSidebar {
+                    sidebar
+                        .frame(width: sidebarWidth)
+                        .background(sidebarBackground)
+                        .overlay(alignment: .trailing) { vHairline }
+                }
+                editor
             }
-            editorColumn
-                .background(Color.black.opacity(opacity))
         }
-        .cornerRadius(10)
+        .background(Color.black.opacity(opacity))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+        )
         .background(shortcutButtons)
         .alert(
             "Delete note?",
@@ -47,25 +62,56 @@ struct EditorView: View {
         }
     }
 
+    // MARK: - Toolbar
+
+    private var toolbar: some View {
+        HStack(spacing: 10) {
+            toolbarButton(systemName: "sidebar.left", help: "Toggle Sidebar (⌘B)") {
+                showSidebar.toggle()
+            }
+            .keyboardShortcut("b", modifiers: .command)
+
+            Spacer(minLength: 8)
+
+            Slider(value: $opacity, in: 0.1...1.0)
+                .controlSize(.mini)
+                .tint(.white)
+                .frame(width: 64)
+                .opacity(0.55)
+
+            toolbarButton(systemName: "square.and.pencil", help: "New Note (⌘N)") {
+                store.create()
+            }
+            .keyboardShortcut("n", modifiers: .command)
+        }
+        // Leave room on the left for the window's traffic-light buttons.
+        .padding(.leading, 76)
+        .padding(.trailing, 12)
+        .frame(height: 32)
+        .foregroundColor(.white.opacity(0.85))
+    }
+
+    private func toolbarButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
     // MARK: - Editor
 
-    private var editorColumn: some View {
-        VStack(spacing: 0) {
-            Slider(value: $opacity, in: 0.1...1.0)
-                .controlSize(.small)
-                .tint(.white)
-                .opacity(0.4)
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-
-            TextEditor(text: activeBody)
-                .font(.system(size: 16))
-                .scrollContentBackground(.hidden)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-                .foregroundColor(.white)
-        }
+    private var editor: some View {
+        TextEditor(text: activeBody)
+            .font(.system(size: 15))
+            .scrollContentBackground(.hidden)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// Two-way binding into the active note's body, routed through the store.
@@ -91,48 +137,41 @@ struct EditorView: View {
     }
 
     private var sidebar: some View {
-        VStack(spacing: 0) {
-            Button(action: { store.create() }) {
-                HStack {
-                    Text("New note")
-                    Spacer()
-                    Text("⌘N").opacity(0.4)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
-
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(sortedNotes) { note in
-                        noteRow(note)
-                    }
+        ScrollView {
+            LazyVStack(spacing: 2) {
+                ForEach(sortedNotes) { note in
+                    noteRow(note)
                 }
             }
+            .padding(6)
         }
-        .font(.system(size: 13))
-        .foregroundColor(.white)
     }
 
     private func noteRow(_ note: Note) -> some View {
         let isActive = note.id == store.activeNoteID
-        return HStack(spacing: 5) {
-            if note.isPinned {
-                Text("◆").font(.system(size: 7)).opacity(0.55)
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 5) {
+                if note.isPinned {
+                    Text("◆").font(.system(size: 7)).opacity(0.6)
+                }
+                Text(note.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            Text(note.title)
+            Text(snippet(of: note))
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.5))
                 .lineLimit(1)
                 .truncationMode(.tail)
-            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(isActive ? Color.white.opacity(0.15) : Color.clear)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(isActive ? Color.white.opacity(0.16) : Color.clear)
+        )
         .contentShape(Rectangle())
         .onTapGesture { store.setActive(id: note.id) }
         .contextMenu {
@@ -141,23 +180,42 @@ struct EditorView: View {
             }
             Button("Delete", role: .destructive) { notePendingDelete = note }
         }
+        .foregroundColor(.white)
+    }
+
+    /// First body line after the title line, used as the row's preview.
+    private func snippet(of note: Note) -> String {
+        var sawTitle = false
+        for raw in note.body.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty { continue }
+            if !sawTitle { sawTitle = true; continue }
+            return line
+        }
+        return "No additional text"
     }
 
     private var sidebarBackground: some View {
         ZStack {
             Color.black.opacity(opacity)
-            Color.white.opacity(0.06)
+            Color.white.opacity(0.05)
         }
     }
 
-    // MARK: - Shortcuts
+    // MARK: - Decorations
+
+    private var hairline: some View {
+        Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+    }
+
+    private var vHairline: some View {
+        Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1)
+    }
+
+    // MARK: - Shortcuts (keys without a visible control live here)
 
     private var shortcutButtons: some View {
         ZStack {
-            Button("") { showSidebar.toggle() }
-                .keyboardShortcut("b", modifiers: .command)
-            Button("") { store.create() }
-                .keyboardShortcut("n", modifiers: .command)
             // ⌘⌫ deletes the selected note only while the sidebar is open,
             // so it doesn't shadow delete-to-line-start in the editor.
             if showSidebar {
@@ -180,10 +238,11 @@ struct EditorView: View {
 
 #Preview {
     let store = NoteStore(storage: InMemoryNoteStorage(seed: [
-        Note(body: "First note\nwith a second line"),
-        Note(body: "Another note")
+        Note(body: "Grocery list\nmilk, eggs, coffee", isPinned: true),
+        Note(body: "Standup notes\nshipped the sidebar"),
+        Note(body: "")
     ]))
     store.loadAll()
     store.activeNoteID = store.notes.first?.id
-    return EditorView(store: store)
+    return EditorView(store: store, showSidebar: true)
 }
