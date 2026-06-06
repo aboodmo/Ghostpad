@@ -1,0 +1,79 @@
+//
+//  NoteStore.swift
+//  NotesCore
+//
+//  Observable multi-note store. Owns the in-memory note list + active selection
+//  and persists changes through an injected NoteStorage (debounced on edit).
+//
+
+import Foundation
+import Combine
+
+@MainActor
+public final class NoteStore: ObservableObject {
+    @Published public private(set) var notes: [Note] = []
+    @Published public var activeNoteID: UUID?
+
+    private let storage: NoteStorage
+    private let saveSubject = PassthroughSubject<UUID, Never>()
+    private var cancellables = Set<AnyCancellable>()
+
+    public init(storage: NoteStorage) {
+        self.storage = storage
+
+        // Debounce disk writes 500ms after the last edit to a note.
+        saveSubject
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] id in
+                MainActor.assumeIsolated { self?.persist(id) }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// The note currently selected for editing, if any.
+    public var activeNote: Note? {
+        guard let id = activeNoteID else { return nil }
+        return notes.first { $0.id == id }
+    }
+
+    /// Load all notes from storage (most recently modified first).
+    public func loadAll() {
+        notes = ((try? storage.loadAll()) ?? []).sorted { $0.modifiedAt > $1.modifiedAt }
+    }
+
+    /// Create a new empty note, persist it, make it active, and return it.
+    @discardableResult
+    public func create() -> Note {
+        let note = Note(body: "")
+        try? storage.save(note)
+        notes.insert(note, at: 0)
+        activeNoteID = note.id
+        return note
+    }
+
+    /// Delete a note; if it was active, fall back to the first remaining note.
+    public func delete(id: UUID) {
+        try? storage.delete(id: id)
+        notes.removeAll { $0.id == id }
+        if activeNoteID == id {
+            activeNoteID = notes.first?.id
+        }
+    }
+
+    public func setActive(id: UUID) {
+        activeNoteID = id
+    }
+
+    /// Apply an edit in memory immediately, then debounce the disk write.
+    public func update(id: UUID, body: String) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        notes[idx].body = body
+        notes[idx].modifiedAt = Date()
+        saveSubject.send(id)
+    }
+
+    private func persist(_ id: UUID) {
+        guard let note = notes.first(where: { $0.id == id }) else { return }
+        try? storage.save(note)
+    }
+}

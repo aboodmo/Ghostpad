@@ -2,14 +2,15 @@
 //  EditorView.swift
 //  Ghostpad
 //
-//  The floating panel's content. Binds to EditorViewModel for the note text;
-//  opacity is pure presentation state, persisted via @AppStorage.
+//  The floating panel's content. Edits the active note via a direct binding
+//  into the NoteStore; opacity is presentation state, persisted via @AppStorage.
 //
 
 import SwiftUI
+import NotesCore
 
 struct EditorView: View {
-    @StateObject private var viewModel = EditorViewModel()
+    @ObservedObject var store: NoteStore
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
 
     var body: some View {
@@ -22,7 +23,7 @@ struct EditorView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 6)
 
-            TextEditor(text: $viewModel.note.body)
+            TextEditor(text: activeBody)
                 .font(.system(size: 16))
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 12)
@@ -44,11 +45,29 @@ struct EditorView: View {
         )
     }
 
+    /// Two-way binding into the active note's body, routed through the store.
+    private var activeBody: Binding<String> {
+        Binding(
+            get: { store.activeNote?.body ?? "" },
+            set: { newValue in
+                if let id = store.activeNoteID {
+                    store.update(id: id, body: newValue)
+                }
+            }
+        )
+    }
+
     private func nudge(_ delta: Double) {
         opacity = min(1.0, max(0.1, opacity + delta))
     }
 }
 
 #Preview {
-    EditorView()
+    let store = NoteStore(storage: InMemoryNoteStorage(seed: [
+        Note(body: "First note\nwith a second line"),
+        Note(body: "Another note")
+    ]))
+    store.loadAll()
+    store.activeNoteID = store.notes.first?.id
+    return EditorView(store: store)
 }
