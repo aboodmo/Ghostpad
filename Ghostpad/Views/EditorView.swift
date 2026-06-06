@@ -24,6 +24,10 @@ struct EditorView: View {
     @Environment(\.controlActiveState) private var activeState
     private var isFocused: Bool { activeState == .key }
 
+    // The editor is split into a title line and the body beneath it.
+    private enum Field { case title, body }
+    @FocusState private var focus: Field?
+
     init(store: NoteStore, showSidebar: Bool = false) {
         _store = ObservedObject(wrappedValue: store)
         _showSidebar = State(initialValue: showSidebar)
@@ -87,10 +91,6 @@ struct EditorView: View {
 
             FogDial(opacity: $opacity, tint: theme.text)
 
-            toolbarButton(systemName: "gearshape", help: "Settings (⌘,)") {
-                NotificationCenter.default.post(name: .ghostpadOpenSettings, object: nil)
-            }
-
             toolbarButton(systemName: "square.and.pencil", help: "New Note (⌘N)") {
                 store.create()
             }
@@ -117,25 +117,68 @@ struct EditorView: View {
     // MARK: - Editor
 
     private var editor: some View {
-        TextEditor(text: activeBody)
-            .font(.system(size: fontSize, design: .serif))
-            .lineSpacing(5)
-            .scrollContentBackground(.hidden)
-            .scrollIndicators(.never)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .foregroundColor(theme.text)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(alignment: .leading, spacing: 9) {
+            // The note titles itself: the first line is a large serif heading.
+            TextField("Untitled", text: titleBinding)
+                .textFieldStyle(.plain)
+                .font(.system(size: fontSize + 8, weight: .semibold, design: .serif))
+                .foregroundColor(theme.text)
+                .focused($focus, equals: .title)
+                .onSubmit { focus = .body }
+
+            // Everything after the first line.
+            TextEditor(text: bodyBinding)
+                .font(.system(size: fontSize, design: .serif))
+                .lineSpacing(5)
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.never)
+                .foregroundColor(theme.text)
+                .focused($focus, equals: .body)
+                .padding(.leading, -5) // align TextEditor's text inset with the title
+                .overlay(alignment: .topLeading) {
+                    if bodyBinding.wrappedValue.isEmpty {
+                        Text("Start typing…")
+                            .font(.system(size: fontSize, design: .serif))
+                            .foregroundColor(theme.text.opacity(0.3))
+                            .allowsHitTesting(false)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
 
-    /// Two-way binding into the active note's body, routed through the store.
-    private var activeBody: Binding<String> {
+    // First line of the body is the title; the rest is the body. Both write
+    // back into the single stored `body` string, so the Note model is untouched.
+    private func split(_ body: String) -> (title: String, rest: String) {
+        if let i = body.firstIndex(of: "\n") {
+            return (String(body[..<i]), String(body[body.index(after: i)...]))
+        }
+        return (body, "")
+    }
+
+    private func writeBody(_ body: String) {
+        if let id = store.activeNoteID { store.update(id: id, body: body) }
+    }
+
+    private var titleBinding: Binding<String> {
         Binding(
-            get: { store.activeNote?.body ?? "" },
-            set: { newValue in
-                if let id = store.activeNoteID {
-                    store.update(id: id, body: newValue)
-                }
+            get: { split(store.activeNote?.body ?? "").title },
+            set: { newTitle in
+                let rest = split(store.activeNote?.body ?? "").rest
+                writeBody(rest.isEmpty ? newTitle : newTitle + "\n" + rest)
+            }
+        )
+    }
+
+    private var bodyBinding: Binding<String> {
+        Binding(
+            get: { split(store.activeNote?.body ?? "").rest },
+            set: { newRest in
+                let title = split(store.activeNote?.body ?? "").title
+                writeBody(newRest.isEmpty ? title : title + "\n" + newRest)
             }
         )
     }
@@ -151,21 +194,40 @@ struct EditorView: View {
     }
 
     private var sidebar: some View {
-        ScrollView {
-            LazyVStack(spacing: 2) {
-                ForEach(sortedNotes) { note in
-                    NoteRow(
-                        note: note,
-                        isActive: note.id == store.activeNoteID,
-                        theme: theme,
-                        snippet: snippet(of: note),
-                        onTap: { store.setActive(id: note.id) },
-                        onTogglePin: { store.setPinned(!note.isPinned, id: note.id) },
-                        onDelete: { notePendingDelete = note }
-                    )
+        VStack(spacing: 0) {
+            ScrollView {
+                LazyVStack(spacing: 2) {
+                    ForEach(sortedNotes) { note in
+                        NoteRow(
+                            note: note,
+                            isActive: note.id == store.activeNoteID,
+                            theme: theme,
+                            snippet: snippet(of: note),
+                            onTap: { store.setActive(id: note.id) },
+                            onTogglePin: { store.setPinned(!note.isPinned, id: note.id) },
+                            onDelete: { notePendingDelete = note }
+                        )
+                    }
+                }
+                .padding(8)
+            }
+            sidebarFooter
+        }
+    }
+
+    // Settings lives at the foot of the sidebar.
+    private var sidebarFooter: some View {
+        VStack(spacing: 0) {
+            hairline
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                toolbarButton(systemName: "gearshape", help: "Settings (⌘,)") {
+                    NotificationCenter.default.post(name: .ghostpadOpenSettings, object: nil)
                 }
             }
-            .padding(8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .foregroundColor(theme.text.opacity(0.85))
         }
     }
 
