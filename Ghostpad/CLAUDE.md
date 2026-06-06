@@ -9,17 +9,19 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 - Notes persisted as one `.md` file per note in `Application Support/Ghostpad/notes/`, each with a small `<uuid>.json` sidecar for timestamps
 
 ## Current state
-- Floating transparent NSPanel hosting a SwiftUI TextEditor
-- Live opacity slider (0.1–1.0, default 0.6) at the top; persisted via `@AppStorage`; ⌘↑/⌘↓ nudge ±0.05
+- Floating transparent NSPanel with an Apple Notes-style top toolbar (sidebar toggle sits beside the traffic-light buttons)
+- Live opacity slider (0.1–1.0, default 0.6) in the top toolbar; persisted via `@AppStorage`; ⌘↑/⌘↓ nudge ±0.05
 - Notes persisted to disk as Markdown + JSON sidecar (see Stack); edits debounced 500ms before save
 - Multiple notes via `NoteStore` (`@MainActor ObservableObject` in `NotesCore`, injected with a `NoteStorage`): tracks `notes` + `activeNoteID`
-- Collapsible left sidebar (⌘B, hidden by default): note list by title, click to switch, new note (⌘N), delete (⌘⌫ / context menu) with confirmation
+- Collapsible left sidebar (toolbar toggle or ⌘B, hidden by default): rows show title + preview line, click to switch, new note (⌘N / toolbar), delete (⌘⌫ / context menu) with confirmation
 - Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, subtle ◆ indicator
+- Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Quit; closing the panel hides it instead of quitting
 - App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
 - No settings or global (system-wide) hotkeys yet
 
 ## Conventions
-- Small commits, one logical change each. Conventional commit prefixes (feat:, fix:, chore:, refactor:).
+- Small commits, one logical change each. No commit-type prefixes (no feat:/fix:/chore:/refactor:).
+- I (the user) run the commits myself — Claude stages/prepares and suggests a message, but does not commit.
 - Never `import AppKit` in model code — only in window/view code
 - Prefer SwiftUI; drop to AppKit only when SwiftUI can't do it (window styling, global hotkeys)
 - Show me diffs before applying. I review every change.
@@ -29,7 +31,7 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 1. Opacity slider (live adjustable) — ✅ done
 2. Persist notes to disk as .md files — ✅ done
 3. Multiple notes + sidebar/picker — ✅ done
-4. Menu bar extra (app lives in menu bar, no dock icon)
+4. Menu bar extra (app lives in menu bar, no dock icon) — ✅ done
 5. Global hotkey to show/hide
 6. Settings window
 7. Screen-share auto-hide
