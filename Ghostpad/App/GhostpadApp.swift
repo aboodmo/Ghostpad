@@ -11,12 +11,20 @@ import SwiftUI
 import AppKit
 import NotesCore
 
+extension Notification.Name {
+    /// Posted by in-app UI (e.g. the toolbar gear) to open the Settings window.
+    static let ghostpadOpenSettings = Notification.Name("ghostpad.openSettings")
+}
+
 @main
 struct GhostpadApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        Settings { EmptyView() }  // placeholder so SwiftUI is happy
+        // The Settings UI is shown in an AppKit-managed window (see AppDelegate),
+        // not the SwiftUI Settings scene, so we can control its window level and
+        // open it programmatically from the menu bar.
+        Settings { EmptyView() }
     }
 }
 
@@ -26,8 +34,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var panel: FloatingPanel?
     private var statusItem: NSStatusItem?
     private var toggleItem: NSMenuItem?
+    private var defaultsObserver: NSObjectProtocol?
+    private var settingsObserver: NSObjectProtocol?
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Keep UserDefaults reads consistent with the @AppStorage defaults.
+        UserDefaults.standard.register(defaults: [
+            "panelOpacity": 0.6,
+            "editorFontSize": 15.0,
+            "alwaysOnTop": true
+        ])
+
         // Load all notes; if none exist, create one. Activate the first.
         store.loadAll()
         if store.notes.isEmpty {
@@ -42,9 +60,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         )
         panel.delegate = self
         self.panel = panel
+        applyWindowLevel()
         panel.makeKeyAndOrderFront(nil)
 
         setupStatusItem()
+
+        // React to the "always on top" setting changing in the Settings window.
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applyWindowLevel() }
+        }
+
+        // In-app "Settings" gear routes here so the window-raising logic runs.
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: .ghostpadOpenSettings, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.openSettings() }
+        }
+    }
+
+    private func applyWindowLevel() {
+        let onTop = UserDefaults.standard.bool(forKey: "alwaysOnTop")
+        panel?.level = onTop ? .floating : .normal
     }
 
     // MARK: - Menu bar
@@ -65,6 +103,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         let newNote = NSMenuItem(title: "New Note", action: #selector(newNote), keyEquivalent: "")
         newNote.target = self
         menu.addItem(newNote)
+
+        menu.addItem(.separator())
+
+        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        settings.target = self
+        menu.addItem(settings)
 
         menu.addItem(.separator())
 
@@ -94,6 +138,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     @objc private func newNote() {
         store.create()
         panel?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+
+        if settingsWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+            window.title = "Ghostpad Settings"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
+        // Sit just above the always-on-top panel so it's never hidden behind it.
+        settingsWindow?.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1)
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func quit() {

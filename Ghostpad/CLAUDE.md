@@ -15,9 +15,10 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 - Multiple notes via `NoteStore` (`@MainActor ObservableObject` in `NotesCore`, injected with a `NoteStorage`): tracks `notes` + `activeNoteID`
 - Collapsible left sidebar (toolbar toggle or ⌘B, hidden by default): rows show title + preview line, click to switch, new note (⌘N / toolbar), delete (⌘⌫ / context menu) with confirmation
 - Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, subtle ◆ indicator
-- Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Quit; closing the panel hides it instead of quitting
+- Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Settings…, Quit; closing the panel hides it instead of quitting
+- Settings window (toolbar gear, menu, or `⌘,`): opacity, editor font size, always-on-top; `SettingsView` is hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene, so it can open programmatically and sit above the always-on-top panel); values stored via `@AppStorage` and applied live
 - App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
-- No settings or global (system-wide) hotkeys yet
+- No global (system-wide) hotkeys yet
 
 ## Conventions
 - Small commits, one logical change each. No commit-type prefixes (no feat:/fix:/chore:/refactor:).
@@ -32,7 +33,7 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 2. Persist notes to disk as .md files — ✅ done
 3. Multiple notes + sidebar/picker — ✅ done
 4. Menu bar extra (app lives in menu bar, no dock icon) — ✅ done
-5. Global hotkey to show/hide
-6. Settings window
+5. Settings window — ✅ done
+6. Global hotkey to show/hide
 7. Screen-share auto-hide
 8. Click-through mode

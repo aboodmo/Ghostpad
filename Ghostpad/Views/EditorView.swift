@@ -14,6 +14,7 @@ import NotesCore
 struct EditorView: View {
     @ObservedObject var store: NoteStore
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
+    @AppStorage("editorFontSize") private var fontSize: Double = 15
 
     @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
@@ -79,6 +80,10 @@ struct EditorView: View {
                 .frame(width: 64)
                 .opacity(0.55)
 
+            toolbarButton(systemName: "gearshape", help: "Settings (⌘,)") {
+                NotificationCenter.default.post(name: .ghostpadOpenSettings, object: nil)
+            }
+
             toolbarButton(systemName: "square.and.pencil", help: "New Note (⌘N)") {
                 store.create()
             }
@@ -106,7 +111,7 @@ struct EditorView: View {
 
     private var editor: some View {
         TextEditor(text: activeBody)
-            .font(.system(size: 15))
+            .font(.system(size: fontSize))
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
