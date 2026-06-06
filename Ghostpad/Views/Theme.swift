@@ -79,6 +79,15 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Whether the theme reads as dark (drives system-control appearance in the
+    /// Settings window). The four light palettes are the exceptions.
+    var isDark: Bool {
+        switch self {
+        case .solarizedLight, .catppuccinLatte, .sepia, .light: return false
+        default: return true
+        }
+    }
+
     /// Accent for the rare, meaningful highlight (the active note). Most themes
     /// stay monochrome (accent == text); Vapor gets its cold electric blue.
     var accent: Color {

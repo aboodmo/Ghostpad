@@ -8,16 +8,21 @@ A macOS menu bar app: transparent, always-on-top notes overlay for use during me
 - Model layer lives in the `NotesCore` local Swift package (macOS 14 / iOS 17), depended on by the app target
 - Notes persisted as one `.md` file per note in `Application Support/Ghostpad/notes/`, each with a small `<uuid>.json` sidecar for timestamps
 
+## Design language — "Vapor"
+Calm, cool, premium; built to look good both at low opacity over a busy call and at high opacity standalone. **Genuinely transparent (no blur)** so the person behind stays visible; **serif** editor (New York) with SF Rounded chrome; cool palette with a cold-blue accent used sparingly. Vapor is the default theme.
+
 ## Current state
-- Floating transparent NSPanel with an Apple Notes-style top toolbar (sidebar toggle sits beside the traffic-light buttons)
-- Live opacity slider (0.1–1.0, default 0.6) in the top toolbar; persisted via `@AppStorage`; ⌘↑/⌘↓ nudge ±0.05
+- Floating transparent NSPanel; top toolbar = sidebar toggle (beside the traffic lights) + fog dial + New Note. 580×520 launch, sidebar open by default
+- **Fog dial** (`FogDial`): custom opacity control (0.1–1.0, default 0.6) — a frosted capsule whose fill recedes as opacity drops, % shows on hover/drag; ⌘↑/⌘↓ nudge ±0.05. Persisted via `@AppStorage`
+- **Breathing focus**: content/border ease back when the panel isn't key, sharpen when it is
+- **Auto-titling editor**: first line renders as a large serif title, rest is the body with a placeholder — both stored in the single `body` string, so the `Note` model is untouched
 - Notes persisted to disk as Markdown + JSON sidecar (see Stack); edits debounced 500ms before save
 - Multiple notes via `NoteStore` (`@MainActor ObservableObject` in `NotesCore`, injected with a `NoteStorage`): tracks `notes` + `activeNoteID`
-- Collapsible left sidebar (toolbar toggle or ⌘B, hidden by default): rows show title + preview line, click to switch, new note (⌘N / toolbar), delete (⌘⌫ / context menu) with confirmation
-- Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, subtle ◆ indicator
+- Collapsible left sidebar (⌘B, open by default): rows show title + preview, an accent edge-marker on the active note, hover lift; new note (⌘N), delete (⌘⌫) with confirmation. Settings gear sits at the sidebar's foot
+- Pinned notes (`Note.isPinned`, backward-compatible Codable): pinned-first sort, right-click Pin/Unpin, small accent `pin.fill`
 - Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Settings…, Quit; closing the panel hides it instead of quitting
-- Settings window (toolbar gear, menu, or `⌘,`): theme, opacity, editor font size, always-on-top; `SettingsView` is hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene, so it can open programmatically and sit above the always-on-top panel); values stored via `@AppStorage` and applied live
-- Color themes (`Theme` enum in the view layer; palettes from canonical sources — Dracula, Nord, Tokyo Night, Catppuccin Mocha/Latte, Gruvbox, Solarized Dark/Light, One Dark, Everforest, Rosé Pine, Monokai, plus Charcoal/Sepia/Light): each defines a background + text color (`Color(hex:)` helper); `EditorView` derives all tints from the active theme so dark and light themes both work
+- Settings window (sidebar gear, menu, or `⌘,`): theme, opacity, font size, always-on-top; Vapor-styled. Hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene) so it opens programmatically and sits above the always-on-top panel; `@AppStorage`, applied live
+- Color themes (`Theme` enum; canonical palettes — Dracula, Nord, Tokyo Night, Catppuccin Mocha/Latte, Gruvbox, Solarized Dark/Light, One Dark, Everforest, Rosé Pine, Monokai, plus Vapor/Charcoal/Sepia/Light): each defines `background` + `text` (+ optional `accent`, + `isDark`); `EditorView` derives all tints from the active theme so dark and light both work
 - App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
 - No global (system-wide) hotkeys yet
 
