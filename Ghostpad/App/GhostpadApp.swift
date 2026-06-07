@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             "editorFontSize": 15.0,
             "alwaysOnTop": true,
             "theme": Theme.vapor.rawValue,
+            "hideFromCapture": true,
             "hotkey.showHide.keyCode": Shortcut.defaultShowHide.keyCode,
             "hotkey.showHide.modifiers": Shortcut.defaultShowHide.modifiers,
             "hotkey.showHide.label": Shortcut.defaultShowHide.label
@@ -72,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         panel.setFrameUsingName("GhostpadPanel")
         panel.setFrameAutosaveName("GhostpadPanel")
         applyWindowLevel()
+        applyCaptureExclusion()
         panel.makeKeyAndOrderFront(nil)
 
         setupStatusItem()
@@ -83,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.applyWindowLevel()
+                self?.applyCaptureExclusion()
                 self?.applyHotKey()
             }
         }
@@ -98,6 +101,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func applyWindowLevel() {
         let onTop = UserDefaults.standard.bool(forKey: "alwaysOnTop")
         panel?.level = onTop ? .floating : .normal
+    }
+
+    // .none excludes the panel from all screen recording/sharing/screenshots at
+    // the OS level — so notes never leak into a screen share, no detection needed.
+    private func applyCaptureExclusion() {
+        let hidden = UserDefaults.standard.bool(forKey: "hideFromCapture")
+        panel?.sharingType = hidden ? .none : .readOnly
     }
 
     // Register (or re-register) the global show/hide hotkey from settings.

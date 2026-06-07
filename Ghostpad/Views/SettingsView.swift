@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
     @AppStorage("editorFontSize") private var fontSize: Double = 15
     @AppStorage("alwaysOnTop") private var alwaysOnTop: Bool = true
+    @AppStorage("hideFromCapture") private var hideFromCapture: Bool = true
     @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
 
     // The configurable global show/hide hotkey, stored as its parts.
@@ -86,6 +87,12 @@ struct SettingsView: View {
                 card("Window") {
                     row("pin", "Keep always on top") {
                         Toggle("", isOn: $alwaysOnTop)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    divider
+                    row("eye.slash", "Hide from screen sharing") {
+                        Toggle("", isOn: $hideFromCapture)
                             .labelsHidden()
                             .toggleStyle(.switch)
                     }
