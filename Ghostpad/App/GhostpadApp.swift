@@ -35,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var panel: FloatingPanel?
     private var statusItem: NSStatusItem?
     private var toggleItem: NSMenuItem?
+    private var clickThroughItem: NSMenuItem?
     private var defaultsObserver: NSObjectProtocol?
     private var settingsObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
@@ -48,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             "alwaysOnTop": true,
             "theme": Theme.vapor.rawValue,
             "hideFromCapture": true,
+            "clickThrough": false,
             "hotkey.showHide.keyCode": Shortcut.defaultShowHide.keyCode,
             "hotkey.showHide.modifiers": Shortcut.defaultShowHide.modifiers,
             "hotkey.showHide.label": Shortcut.defaultShowHide.label
@@ -74,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         panel.setFrameAutosaveName("GhostpadPanel")
         applyWindowLevel()
         applyCaptureExclusion()
+        applyClickThrough()
         panel.makeKeyAndOrderFront(nil)
 
         setupStatusItem()
@@ -86,6 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             MainActor.assumeIsolated {
                 self?.applyWindowLevel()
                 self?.applyCaptureExclusion()
+                self?.applyClickThrough()
                 self?.applyHotKey()
             }
         }
@@ -108,6 +112,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func applyCaptureExclusion() {
         let hidden = UserDefaults.standard.bool(forKey: "hideFromCapture")
         panel?.sharingType = hidden ? .none : .readOnly
+    }
+
+    // Click-through: the panel ignores the mouse so clicks reach the app behind.
+    // Recoverable only from the menu bar / Settings, never by clicking the panel.
+    private func applyClickThrough() {
+        panel?.ignoresMouseEvents = UserDefaults.standard.bool(forKey: "clickThrough")
     }
 
     // Register (or re-register) the global show/hide hotkey from settings.
@@ -145,6 +155,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         newNote.target = self
         menu.addItem(newNote)
 
+        let clickThrough = NSMenuItem(title: "Click-Through", action: #selector(toggleClickThrough), keyEquivalent: "")
+        clickThrough.target = self
+        clickThroughItem = clickThrough
+        menu.addItem(clickThrough)
+
         menu.addItem(.separator())
 
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
@@ -165,6 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     func menuNeedsUpdate(_ menu: NSMenu) {
         let visible = panel?.isVisible ?? false
         toggleItem?.title = visible ? "Hide Ghostpad" : "Show Ghostpad"
+        clickThroughItem?.state = UserDefaults.standard.bool(forKey: "clickThrough") ? .on : .off
 
         // Mirror the configured global hotkey as the menu's key equivalent when
         // it's a single letter/digit (otherwise just leave it off the menu).
@@ -195,6 +211,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     @objc private func newNote() {
         store.create()
         panel?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func toggleClickThrough() {
+        let new = !UserDefaults.standard.bool(forKey: "clickThrough")
+        UserDefaults.standard.set(new, forKey: "clickThrough")
+        // applyClickThrough() runs via the defaults observer.
     }
 
     @objc private func openSettings() {

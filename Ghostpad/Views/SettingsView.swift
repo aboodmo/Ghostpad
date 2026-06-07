@@ -18,6 +18,7 @@ struct SettingsView: View {
     @AppStorage("editorFontSize") private var fontSize: Double = 15
     @AppStorage("alwaysOnTop") private var alwaysOnTop: Bool = true
     @AppStorage("hideFromCapture") private var hideFromCapture: Bool = true
+    @AppStorage("clickThrough") private var clickThrough: Bool = false
     @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
 
     // The configurable global show/hide hotkey, stored as its parts.
@@ -93,6 +94,12 @@ struct SettingsView: View {
                     divider
                     row("eye.slash", "Hide from screen sharing") {
                         Toggle("", isOn: $hideFromCapture)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    divider
+                    row("cursorarrow.rays", "Click-through (ignore mouse)") {
+                        Toggle("", isOn: $clickThrough)
                             .labelsHidden()
                             .toggleStyle(.switch)
                     }
