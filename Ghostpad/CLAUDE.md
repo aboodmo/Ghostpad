@@ -23,8 +23,9 @@ Calm, cool, premium; built to look good both at low opacity over a busy call and
 - Lives in the menu bar (`LSUIElement`, no Dock icon): status-item menu for Show/Hide, New Note, Settings…, Quit; closing the panel hides it instead of quitting
 - Settings window (sidebar gear, menu, or `⌘,`): theme, opacity, font size, always-on-top; Vapor-styled. Hosted in an AppDelegate-owned `NSWindow` (not the SwiftUI `Settings` scene) so it opens programmatically and sits above the always-on-top panel; `@AppStorage`, applied live
 - Color themes (`Theme` enum; canonical palettes — Dracula, Nord, Tokyo Night, Catppuccin Mocha/Latte, Gruvbox, Solarized Dark/Light, One Dark, Everforest, Rosé Pine, Monokai, plus Vapor/Charcoal/Sepia/Light): each defines `background` + `text` (+ optional `accent`, + `isDark`); `EditorView` derives all tints from the active theme so dark and light both work
+- **Global show/hide hotkey** (default ⌥⌘G): system-wide via Carbon `RegisterEventHotKey` (`GlobalHotKey`, no dependency, no Accessibility permission). User-configurable in Settings → Shortcuts via a recorder; the panel re-registers it live. Conflict handling is best-effort: hard sanity rules (needs a real modifier), a **warn-but-allow** notice for known macOS system shortcuts (curated list — macOS exposes no API to enumerate all global shortcuts) and built-in overlaps, plus Reset to default. Built-in editor shortcuts (⌘N/⌘B/⌘⌫/⌘↑/⌘↓) are listed read-only
+- The panel remembers its size/position across launches (`setFrameAutosaveName`); first-run default is 760×640
 - App layout: `App/`, `Views/`, `Window/`, `Storage/` in the app target (`FileNoteStorage` + `InMemoryNoteStorage` for previews/tests); `Note` + `NoteStorage` + `NoteStore` in `NotesCore`
-- No global (system-wide) hotkeys yet
 
 ## Conventions
 - Small commits, one logical change each. No commit-type prefixes (no feat:/fix:/chore:/refactor:).
@@ -40,6 +41,6 @@ Calm, cool, premium; built to look good both at low opacity over a busy call and
 3. Multiple notes + sidebar/picker — ✅ done
 4. Menu bar extra (app lives in menu bar, no dock icon) — ✅ done
 5. Settings window — ✅ done
-6. Global hotkey to show/hide
+6. Global hotkey to show/hide — ✅ done (configurable in Settings → Shortcuts)
 7. Screen-share auto-hide
 8. Click-through mode

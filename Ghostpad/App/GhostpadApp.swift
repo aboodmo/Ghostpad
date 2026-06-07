@@ -9,6 +9,7 @@
 
 import SwiftUI
 import AppKit
+import Carbon.HIToolbox
 import NotesCore
 
 extension Notification.Name {
@@ -37,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var defaultsObserver: NSObjectProtocol?
     private var settingsObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
+    private var showHideHotKey: GlobalHotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Keep UserDefaults reads consistent with the @AppStorage defaults.
@@ -44,7 +46,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             "panelOpacity": 0.6,
             "editorFontSize": 15.0,
             "alwaysOnTop": true,
-            "theme": Theme.vapor.rawValue
+            "theme": Theme.vapor.rawValue,
+            "hotkey.showHide.keyCode": Shortcut.defaultShowHide.keyCode,
+            "hotkey.showHide.modifiers": Shortcut.defaultShowHide.modifiers,
+            "hotkey.showHide.label": Shortcut.defaultShowHide.label
         ])
 
         // Load all notes; if none exist, create one. Activate the first.
@@ -70,12 +75,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         panel.makeKeyAndOrderFront(nil)
 
         setupStatusItem()
+        applyHotKey() // system-wide show/hide hotkey, read from settings
 
-        // React to the "always on top" setting changing in the Settings window.
+        // React to settings changes (always-on-top, and the show/hide hotkey).
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.applyWindowLevel() }
+            MainActor.assumeIsolated {
+                self?.applyWindowLevel()
+                self?.applyHotKey()
+            }
         }
 
         // In-app "Settings" gear routes here so the window-raising logic runs.
@@ -89,6 +98,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func applyWindowLevel() {
         let onTop = UserDefaults.standard.bool(forKey: "alwaysOnTop")
         panel?.level = onTop ? .floating : .normal
+    }
+
+    // Register (or re-register) the global show/hide hotkey from settings.
+    // Guarded so unrelated defaults changes (e.g. opacity drags) don't churn it.
+    private var appliedHotKeyCode = Int.min
+    private var appliedHotKeyModifiers = Int.min
+    private func applyHotKey() {
+        let keyCode = UserDefaults.standard.integer(forKey: "hotkey.showHide.keyCode")
+        let modifiers = UserDefaults.standard.integer(forKey: "hotkey.showHide.modifiers")
+        guard keyCode != appliedHotKeyCode || modifiers != appliedHotKeyModifiers else { return }
+        appliedHotKeyCode = keyCode
+        appliedHotKeyModifiers = modifiers
+        // Replacing the instance deinits the old one, unregistering it first.
+        showHideHotKey = GlobalHotKey(keyCode: keyCode, modifiers: modifiers) { [weak self] in
+            self?.togglePanel()
+        }
     }
 
     // MARK: - Menu bar
@@ -126,10 +151,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         statusItem = item
     }
 
-    /// Keep the toggle item's title in sync with the panel's visibility.
+    /// Keep the toggle item's title (and displayed shortcut) in sync.
     func menuNeedsUpdate(_ menu: NSMenu) {
         let visible = panel?.isVisible ?? false
         toggleItem?.title = visible ? "Hide Ghostpad" : "Show Ghostpad"
+
+        // Mirror the configured global hotkey as the menu's key equivalent when
+        // it's a single letter/digit (otherwise just leave it off the menu).
+        let label = UserDefaults.standard.string(forKey: "hotkey.showHide.label") ?? ""
+        if label.count == 1, let c = label.lowercased().first, c.isLetter || c.isNumber {
+            toggleItem?.keyEquivalent = String(c)
+            let mods = UserDefaults.standard.integer(forKey: "hotkey.showHide.modifiers")
+            var mask: NSEvent.ModifierFlags = []
+            if mods & cmdKey != 0 { mask.insert(.command) }
+            if mods & optionKey != 0 { mask.insert(.option) }
+            if mods & controlKey != 0 { mask.insert(.control) }
+            if mods & shiftKey != 0 { mask.insert(.shift) }
+            toggleItem?.keyEquivalentModifierMask = mask
+        } else {
+            toggleItem?.keyEquivalent = ""
+        }
     }
 
     @objc private func togglePanel() {
