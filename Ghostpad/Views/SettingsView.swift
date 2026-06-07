@@ -3,9 +3,10 @@
 //  Ghostpad
 //
 //  Contents of the Settings window (⌘,). Styled to match the Vapor panel —
-//  the active theme's own background/text/accent, a serif title, and quiet
-//  section headers — so it no longer clashes with the floating note. Values are
-//  stored via @AppStorage; the editor and panel read the same keys and react live.
+//  the active theme's own background/text/accent, a serif title, grouped cards
+//  with an icon per row — so it no longer clashes with the floating note.
+//  Values are stored via @AppStorage; the editor and panel read the same keys
+//  and react live.
 //
 
 import SwiftUI
@@ -19,35 +20,37 @@ struct SettingsView: View {
     private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("Settings")
                 .font(.system(size: 22, weight: .semibold, design: .serif))
 
-            section("Appearance") {
-                row("Theme") {
+            card("Appearance") {
+                row("paintpalette", "Theme") {
                     Picker("", selection: $themeRaw) {
                         ForEach(Theme.allCases) { t in Text(t.name).tag(t.rawValue) }
                     }
                     .labelsHidden()
-                    .frame(width: 170)
+                    .frame(width: 168)
                 }
-                row("Opacity") {
+                divider
+                row("circle.lefthalf.filled", "Opacity") {
                     HStack(spacing: 10) {
-                        Slider(value: $opacity, in: 0.1...1.0).frame(width: 150)
+                        Slider(value: $opacity, in: 0.1...1.0).frame(width: 140)
                         Text("\(Int((opacity * 100).rounded()))%")
                             .font(.system(size: 12, design: .rounded).monospacedDigit())
                             .foregroundColor(theme.text.opacity(0.55))
                             .frame(width: 38, alignment: .trailing)
                     }
                 }
-                row("Editor text size") {
+                divider
+                row("textformat.size", "Editor text size") {
                     Stepper("\(Int(fontSize)) pt", value: $fontSize, in: 10...28, step: 1)
-                        .frame(width: 120)
+                        .frame(width: 116)
                 }
             }
 
-            section("Window") {
-                row("Keep always on top") {
+            card("Window") {
+                row("pin", "Keep always on top") {
                     Toggle("", isOn: $alwaysOnTop)
                         .labelsHidden()
                         .toggleStyle(.switch)
@@ -55,9 +58,10 @@ struct SettingsView: View {
             }
 
             Spacer(minLength: 0)
+            footer
         }
-        .padding(28)
-        .frame(width: 430, height: 360)
+        .padding(26)
+        .frame(width: 440, height: 400)
         .background(theme.background)
         .foregroundColor(theme.text)
         .tint(theme.accent)
@@ -66,7 +70,8 @@ struct SettingsView: View {
 
     // MARK: - Building blocks
 
-    private func section<Content: View>(
+    /// A titled, rounded, hairline-bordered group of rows.
+    private func card<Content: View>(
         _ title: String, @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -75,21 +80,53 @@ struct SettingsView: View {
                 .tracking(1.3)
                 .foregroundColor(theme.text.opacity(0.45))
             VStack(spacing: 0) { content() }
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(theme.text.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(theme.text.opacity(0.08), lineWidth: 1)
+                )
         }
     }
 
     private func row<Control: View>(
-        _ label: String, @ViewBuilder control: () -> Control
+        _ icon: String, _ label: String, @ViewBuilder control: () -> Control
     ) -> some View {
-        HStack {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(theme.text.opacity(0.5))
+                .frame(width: 18)
             Text(label).font(.system(size: 13))
             Spacer(minLength: 16)
             control()
         }
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(theme.text.opacity(0.07)).frame(height: 1)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+    }
+
+    // Hairline between rows, inset to start under the label (past the icon).
+    private var divider: some View {
+        Rectangle()
+            .fill(theme.text.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 44)
+    }
+
+    private var footer: some View {
+        HStack {
+            Spacer()
+            Text("Ghostpad\(versionSuffix)")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundColor(theme.text.opacity(0.35))
         }
+    }
+
+    private var versionSuffix: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        return v.map { " \($0)" } ?? ""
     }
 }
 

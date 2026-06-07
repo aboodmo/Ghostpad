@@ -56,11 +56,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         }
 
         let panel = FloatingPanel(
-            contentRect: NSRect(x: 200, y: 200, width: 580, height: 520),
+            contentRect: NSRect(x: 200, y: 200, width: 760, height: 640),
             content: EditorView(store: store, showSidebar: true)
         )
         panel.delegate = self
         self.panel = panel
+        // Remember the user's size/position across launches; the contentRect
+        // above is only the first-run default. setFrameUsingName restores a
+        // saved frame (no-op on first run); setFrameAutosaveName keeps it saved.
+        panel.setFrameUsingName("GhostpadPanel")
+        panel.setFrameAutosaveName("GhostpadPanel")
         applyWindowLevel()
         panel.makeKeyAndOrderFront(nil)
 
