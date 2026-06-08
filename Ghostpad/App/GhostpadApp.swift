@@ -39,7 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var defaultsObserver: NSObjectProtocol?
     private var settingsObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
-    private var showHideHotKey: GlobalHotKey?
+    private var hotKeys: [String: GlobalHotKey] = [:]
+    private var appliedHotKeys: [String: [Int]] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Keep UserDefaults reads consistent with the @AppStorage defaults.
@@ -52,7 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             "clickThrough": false,
             "hotkey.showHide.keyCode": Shortcut.defaultShowHide.keyCode,
             "hotkey.showHide.modifiers": Shortcut.defaultShowHide.modifiers,
-            "hotkey.showHide.label": Shortcut.defaultShowHide.label
+            "hotkey.showHide.label": Shortcut.defaultShowHide.label,
+            "hotkey.clickThrough.keyCode": Shortcut.defaultClickThrough.keyCode,
+            "hotkey.clickThrough.modifiers": Shortcut.defaultClickThrough.modifiers,
+            "hotkey.clickThrough.label": Shortcut.defaultClickThrough.label
         ])
 
         // Load all notes; if none exist, create one. Activate the first.
@@ -80,9 +84,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         panel.makeKeyAndOrderFront(nil)
 
         setupStatusItem()
-        applyHotKey() // system-wide show/hide hotkey, read from settings
+        applyHotKeys() // system-wide hotkeys, read from settings
 
-        // React to settings changes (always-on-top, and the show/hide hotkey).
+        // React to settings changes (window flags + the global hotkeys).
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -90,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                 self?.applyWindowLevel()
                 self?.applyCaptureExclusion()
                 self?.applyClickThrough()
-                self?.applyHotKey()
+                self?.applyHotKeys()
             }
         }
 
@@ -120,20 +124,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         panel?.ignoresMouseEvents = UserDefaults.standard.bool(forKey: "clickThrough")
     }
 
-    // Register (or re-register) the global show/hide hotkey from settings.
-    // Guarded so unrelated defaults changes (e.g. opacity drags) don't churn it.
-    private var appliedHotKeyCode = Int.min
-    private var appliedHotKeyModifiers = Int.min
-    private func applyHotKey() {
-        let keyCode = UserDefaults.standard.integer(forKey: "hotkey.showHide.keyCode")
-        let modifiers = UserDefaults.standard.integer(forKey: "hotkey.showHide.modifiers")
-        guard keyCode != appliedHotKeyCode || modifiers != appliedHotKeyModifiers else { return }
-        appliedHotKeyCode = keyCode
-        appliedHotKeyModifiers = modifiers
+    // Register (or re-register) the global hotkeys from settings. Guarded per
+    // hotkey so unrelated defaults changes (e.g. opacity drags) don't churn them.
+    private func applyHotKeys() {
+        registerHotKey("hotkey.showHide") { [weak self] in self?.togglePanel() }
+        registerHotKey("hotkey.clickThrough") { [weak self] in self?.toggleClickThrough() }
+    }
+
+    private func registerHotKey(_ prefix: String, action: @escaping () -> Void) {
+        let keyCode = UserDefaults.standard.integer(forKey: "\(prefix).keyCode")
+        let modifiers = UserDefaults.standard.integer(forKey: "\(prefix).modifiers")
+        guard appliedHotKeys[prefix] != [keyCode, modifiers] else { return }
+        appliedHotKeys[prefix] = [keyCode, modifiers]
         // Replacing the instance deinits the old one, unregistering it first.
-        showHideHotKey = GlobalHotKey(keyCode: keyCode, modifiers: modifiers) { [weak self] in
-            self?.togglePanel()
-        }
+        hotKeys[prefix] = GlobalHotKey(keyCode: keyCode, modifiers: modifiers, handler: action)
     }
 
     // MARK: - Menu bar
@@ -176,27 +180,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         statusItem = item
     }
 
-    /// Keep the toggle item's title (and displayed shortcut) in sync.
+    /// Keep the toggle items' titles, state, and displayed shortcuts in sync.
     func menuNeedsUpdate(_ menu: NSMenu) {
         let visible = panel?.isVisible ?? false
         toggleItem?.title = visible ? "Hide Ghostpad" : "Show Ghostpad"
         clickThroughItem?.state = UserDefaults.standard.bool(forKey: "clickThrough") ? .on : .off
 
-        // Mirror the configured global hotkey as the menu's key equivalent when
-        // it's a single letter/digit (otherwise just leave it off the menu).
-        let label = UserDefaults.standard.string(forKey: "hotkey.showHide.label") ?? ""
-        if label.count == 1, let c = label.lowercased().first, c.isLetter || c.isNumber {
-            toggleItem?.keyEquivalent = String(c)
-            let mods = UserDefaults.standard.integer(forKey: "hotkey.showHide.modifiers")
-            var mask: NSEvent.ModifierFlags = []
-            if mods & cmdKey != 0 { mask.insert(.command) }
-            if mods & optionKey != 0 { mask.insert(.option) }
-            if mods & controlKey != 0 { mask.insert(.control) }
-            if mods & shiftKey != 0 { mask.insert(.shift) }
-            toggleItem?.keyEquivalentModifierMask = mask
-        } else {
-            toggleItem?.keyEquivalent = ""
+        if let toggleItem { mirrorHotKey("hotkey.showHide", on: toggleItem) }
+        if let clickThroughItem { mirrorHotKey("hotkey.clickThrough", on: clickThroughItem) }
+    }
+
+    // Show a configured global hotkey as a menu key-equivalent when it's a
+    // single letter/digit (otherwise leave it off the menu).
+    private func mirrorHotKey(_ prefix: String, on item: NSMenuItem) {
+        let label = UserDefaults.standard.string(forKey: "\(prefix).label") ?? ""
+        guard label.count == 1, let c = label.lowercased().first, c.isLetter || c.isNumber else {
+            item.keyEquivalent = ""
+            return
         }
+        item.keyEquivalent = String(c)
+        let mods = UserDefaults.standard.integer(forKey: "\(prefix).modifiers")
+        var mask: NSEvent.ModifierFlags = []
+        if mods & cmdKey != 0 { mask.insert(.command) }
+        if mods & optionKey != 0 { mask.insert(.option) }
+        if mods & controlKey != 0 { mask.insert(.control) }
+        if mods & shiftKey != 0 { mask.insert(.shift) }
+        item.keyEquivalentModifierMask = mask
     }
 
     @objc private func togglePanel() {

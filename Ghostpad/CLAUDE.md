@@ -52,7 +52,8 @@ Calm, cool, premium; built to read well both at low opacity over a busy call and
 - **Themes** (`Theme` enum; canonical palettes — Vapor, Charcoal, Dracula, Nord, Tokyo Night, Catppuccin Mocha/Latte, Gruvbox, Solarized Dark/Light, One Dark, Everforest, Rosé Pine, Monokai, Sepia, Light): each defines `background` + `text` (+ optional `accent`, + `isDark`); `EditorView` derives all tints from the active theme so dark and light both work.
 - **Global show/hide hotkey** (default ⌥⌘G, `GlobalHotKey` via Carbon `RegisterEventHotKey` — no dependency, no Accessibility permission): toggles the panel from any app, re-registered live from `@AppStorage`. **Configurable** in Settings → Shortcuts via a recorder (`ShortcutRecorder`: click → press combo, Esc cancels, swallows the keystroke, requires a real modifier). Conflict handling is **best-effort** (macOS exposes no API to enumerate all global shortcuts): a **warn-but-allow** notice for known macOS system shortcuts (a curated `Shortcut.systemReserved` list) and built-in overlaps, plus Reset to default. Built-in editor shortcuts (⌘B/⌘N/⌘⌫/⌘↑/⌘↓) are listed read-only.
 - **Hide from screen sharing** (`hideFromCapture`, **on by default**): sets `NSWindow.sharingType = .none`, excluding the panel from all screen recording/sharing/screenshots at the OS level — no detection, no permissions. Toggle in Settings → Window. ⚠️ This also hides the panel from *intentional* screenshots — see Gotchas.
-- **Click-through** (`clickThrough`, off by default): sets `ignoresMouseEvents` so clicks pass through to the app behind. Because the panel can't be clicked in this mode, it's toggled from the **menu-bar "Click-Through"** item (checkable) or Settings → Window.
+- **Click-through** (`clickThrough`, off by default): sets `ignoresMouseEvents` so clicks pass through to the app behind. Because the panel can't be clicked in this mode, it's reversible from a **global hotkey** (default ⌥⌘T, also configurable in Settings → Shortcuts) and the checkable **menu-bar "Click-Through"** item / Settings → Window.
+- **Two configurable global hotkeys** live in Settings → Shortcuts (Show/Hide ⌥⌘G, Toggle Click-Through ⌥⌘T). The `AppDelegate` keeps them in `hotKeys`/`appliedHotKeys` dictionaries keyed by the `@AppStorage` prefix (`hotkey.showHide` / `hotkey.clickThrough`); `registerHotKey(_:action:)` re-registers per-prefix when changed. The recorder warns (but allows) when a combo matches the other Ghostpad hotkey, a system shortcut, or a built-in.
 
 ## Settings / `@AppStorage` keys
 All registered as defaults in `AppDelegate.applicationDidFinishLaunching`. Keep `@AppStorage` defaults in the views in sync with these.
@@ -65,9 +66,8 @@ All registered as defaults in `AppDelegate.applicationDidFinishLaunching`. Keep 
 | `alwaysOnTop` | Bool | true | `applyWindowLevel()` → panel `.floating`/`.normal` |
 | `hideFromCapture` | Bool | true | `applyCaptureExclusion()` → `sharingType` |
 | `clickThrough` | Bool | false | `applyClickThrough()` → `ignoresMouseEvents`; menu checkmark |
-| `hotkey.showHide.keyCode` | Int | `kVK_ANSI_G` | `applyHotKey()` re-registers `GlobalHotKey` |
-| `hotkey.showHide.modifiers` | Int | `cmdKey \| optionKey` | `applyHotKey()` + menu key-equivalent |
-| `hotkey.showHide.label` | String | `"G"` | menu key-equivalent + recorder display |
+| `hotkey.showHide.{keyCode,modifiers,label}` | Int/Int/String | G, ⌘⌥, "G" | `registerHotKey("hotkey.showHide")` + menu key-equivalent + recorder |
+| `hotkey.clickThrough.{keyCode,modifiers,label}` | Int/Int/String | T, ⌘⌥, "T" | `registerHotKey("hotkey.clickThrough")` + menu key-equivalent + recorder |
 
 Panel frame is stored separately by AppKit under `UserDefaults` key `NSWindow Frame GhostpadPanel` (via `setFrameAutosaveName`).
 

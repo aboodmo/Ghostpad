@@ -21,10 +21,14 @@ struct SettingsView: View {
     @AppStorage("clickThrough") private var clickThrough: Bool = false
     @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
 
-    // The configurable global show/hide hotkey, stored as its parts.
+    // The configurable global hotkeys, stored as their parts.
     @AppStorage("hotkey.showHide.keyCode") private var hkKeyCode: Int = Shortcut.defaultShowHide.keyCode
     @AppStorage("hotkey.showHide.modifiers") private var hkModifiers: Int = Shortcut.defaultShowHide.modifiers
     @AppStorage("hotkey.showHide.label") private var hkLabel: String = Shortcut.defaultShowHide.label
+
+    @AppStorage("hotkey.clickThrough.keyCode") private var ctKeyCode: Int = Shortcut.defaultClickThrough.keyCode
+    @AppStorage("hotkey.clickThrough.modifiers") private var ctModifiers: Int = Shortcut.defaultClickThrough.modifiers
+    @AppStorage("hotkey.clickThrough.label") private var ctLabel: String = Shortcut.defaultClickThrough.label
 
     private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
 
@@ -44,9 +48,17 @@ struct SettingsView: View {
         )
     }
 
-    // Warn (but allow) on a likely conflict; built-in overlaps included.
-    private var hotKeyWarning: String? {
-        let s = showHide.wrappedValue
+    private var clickThroughKey: Binding<Shortcut> {
+        Binding(
+            get: { Shortcut(keyCode: ctKeyCode, modifiers: ctModifiers, label: ctLabel) },
+            set: { ctKeyCode = $0.keyCode; ctModifiers = $0.modifiers; ctLabel = $0.label }
+        )
+    }
+
+    // Warn (but allow) on a likely conflict: another Ghostpad hotkey, a known
+    // macOS system shortcut, or a built-in editor shortcut.
+    private func warning(for s: Shortcut, against other: Shortcut) -> String? {
+        if s.matches(other) { return "Same as another Ghostpad hotkey." }
         if s.conflictsWithSystemShortcut { return "May conflict with a macOS system shortcut." }
         if builtIns.contains(where: { $0.1.matches(s) }) { return "Overlaps a built-in editor shortcut." }
         return nil
@@ -120,22 +132,11 @@ struct SettingsView: View {
 
     private var shortcutsCard: some View {
         card("Shortcuts") {
-            row("macwindow.on.rectangle", "Show / Hide Ghostpad") {
-                ShortcutRecorder(shortcut: showHide, theme: theme)
-            }
-            if let warning = hotKeyWarning {
-                HStack(spacing: 7) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.orange)
-                    Text(warning)
-                        .font(.system(size: 11))
-                        .foregroundColor(theme.text.opacity(0.65))
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
-            }
+            hotKeyRow("macwindow.on.rectangle", "Show / Hide Ghostpad",
+                      binding: showHide, against: clickThroughKey.wrappedValue)
+            divider
+            hotKeyRow("cursorarrow.rays", "Toggle Click-Through",
+                      binding: clickThroughKey, against: showHide.wrappedValue)
 
             ForEach(builtIns, id: \.0) { name, sc in
                 divider
@@ -150,13 +151,37 @@ struct SettingsView: View {
                     .frame(width: 18)
                 Text("Reset to default").font(.system(size: 13))
                 Spacer(minLength: 16)
-                Button("Reset") { showHide.wrappedValue = .defaultShowHide }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(theme.accent)
+                Button("Reset") {
+                    showHide.wrappedValue = .defaultShowHide
+                    clickThroughKey.wrappedValue = .defaultClickThrough
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(theme.accent)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 11)
+        }
+    }
+
+    @ViewBuilder
+    private func hotKeyRow(_ icon: String, _ title: String,
+                           binding: Binding<Shortcut>, against other: Shortcut) -> some View {
+        row(icon, title) {
+            ShortcutRecorder(shortcut: binding, theme: theme)
+        }
+        if let warning = warning(for: binding.wrappedValue, against: other) {
+            HStack(spacing: 7) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.orange)
+                Text(warning)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.text.opacity(0.65))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
         }
     }
 
