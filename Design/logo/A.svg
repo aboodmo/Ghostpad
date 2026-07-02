@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161B22"/>
+      <stop offset="1" stop-color="#0B0E13"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <!-- page-ghost: rounded-top page with a folded top-right corner and a scalloped ghost bottom -->
+  <path d="M 348 690
+           A 55 55 0 0 0 458 690
+           A 55 55 0 0 0 568 690
+           A 55 55 0 0 0 676 690
+           L 676 360
+           L 586 270
+           L 388 270
+           A 40 40 0 0 0 348 310
+           Z" fill="#E8ECF2"/>
+  <!-- folded corner flap -->
+  <path d="M 586 270 L 676 360 L 586 360 Z" fill="#C2CAD6"/>
+  <!-- eyes -->
+  <ellipse cx="446" cy="430" rx="26" ry="34" fill="#0E1116"/>
+  <ellipse cx="578" cy="430" rx="26" ry="34" fill="#0E1116"/>
+  <!-- note lines -->
+  <line x1="430" y1="540" x2="594" y2="540" stroke="#6EA8FF" stroke-width="18" stroke-linecap="round"/>
+  <line x1="430" y1="590" x2="556" y2="590" stroke="#A6AEBD" stroke-width="18" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161B22"/>
+      <stop offset="1" stop-color="#0B0E13"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg2)"/>
+  <!-- classic domed ghost; belly carries note lines (one accent) -->
+  <path d="M 322 712
+           A 56 56 0 0 0 434 712
+           A 56 56 0 0 0 546 712
+           A 56 56 0 0 0 658 712
+           A 56 56 0 0 0 702 712
+           L 702 466
+           A 190 190 0 0 0 322 466
+           Z" fill="#E8ECF2"/>
+  <ellipse cx="452" cy="430" rx="24" ry="32" fill="#0E1116"/>
+  <ellipse cx="572" cy="430" rx="24" ry="32" fill="#0E1116"/>
+  <line x1="412" y1="540" x2="612" y2="540" stroke="#6EA8FF" stroke-width="20" stroke-linecap="round"/>
+  <line x1="412" y1="592" x2="566" y2="592" stroke="#9AA3B2" stroke-width="20" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <mask id="cut">
+      <rect width="1024" height="1024" fill="white"/>
+      <circle cx="430" cy="455" r="42" fill="black"/>
+      <circle cx="594" cy="455" r="42" fill="black"/>
+      <rect x="402" y="560" width="220" height="46" rx="23" fill="black"/>
+    </mask>
+  </defs>
+  <!-- filled silhouette, monochrome, with eyes + line as cut-outs (template image) -->
+  <path mask="url(#cut)" fill="#000000"
+        d="M 300 712
+           A 58 58 0 0 0 416 712
+           A 58 58 0 0 0 532 712
+           A 58 58 0 0 0 648 712
+           A 58 58 0 0 0 706 712
+           L 706 356
+           L 600 250
+           L 360 250
+           A 60 60 0 0 0 300 310
+           Z"/>
+  <path mask="url(#cut)" fill="#000000" d="M 600 250 L 600 356 L 706 356 Z" opacity="0"/>
+</svg>

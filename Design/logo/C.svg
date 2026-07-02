@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="230" fill="#0E1116"/>
+  <!-- monoline ghost-page with folded corner -->
+  <path d="M 350 700
+           A 54 54 0 0 0 458 700
+           A 54 54 0 0 0 566 700
+           A 54 54 0 0 0 674 700
+           L 674 372
+           L 578 276
+           L 390 276
+           A 40 40 0 0 0 350 316
+           Z"
+        fill="none" stroke="#E8ECF2" stroke-width="22" stroke-linejoin="round"/>
+  <path d="M 578 276 L 578 372 L 674 372" fill="none" stroke="#E8ECF2" stroke-width="22" stroke-linejoin="round"/>
+  <circle cx="452" cy="440" r="15" fill="#E8ECF2"/>
+  <circle cx="572" cy="440" r="15" fill="#E8ECF2"/>
+  <line x1="430" y1="545" x2="594" y2="545" stroke="#6EA8FF" stroke-width="20" stroke-linecap="round"/>
+</svg>

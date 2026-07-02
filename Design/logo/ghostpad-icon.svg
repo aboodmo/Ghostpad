@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#27314F"/><stop offset="0.5" stop-color="#161D33"/><stop offset="1" stop-color="#0B0F1C"/></linearGradient>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+ <filter id="float" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="16"/></filter>
+</defs>
+<rect x="100" y="128" width="824" height="824" rx="184" fill="#000" opacity="0.5" filter="url(#soft)"/>
+<rect x="100" y="100" width="824" height="824" rx="184" fill="url(#bg)"/>
+<rect x="101" y="101" width="822" height="822" rx="183" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+<rect x="352" y="300" width="256" height="320" rx="26" fill="#DCE6FF" fill-opacity="0.05" stroke="#9FB4E8" stroke-opacity="0.32" stroke-width="7"/>
+<rect x="412" y="372" width="256" height="320" rx="26" fill="#000" opacity="0.45" filter="url(#float)"/>
+<rect x="408" y="348" width="256" height="320" rx="26" fill="#DCE6FF" fill-opacity="0.14" stroke="#E6EDFF" stroke-opacity="0.9" stroke-width="9"/>
+<rect x="444" y="404" width="150" height="15" rx="7.5" fill="#E6EDFF" fill-opacity="0.9"/>
+<rect x="444" y="466" width="184" height="13" rx="6.5" fill="#7FA6FF"/>
+<rect x="444" y="504" width="184" height="13" rx="6.5" fill="#DCE6FF" fill-opacity="0.72"/>
+<rect x="444" y="542" width="140" height="13" rx="6.5" fill="#DCE6FF" fill-opacity="0.66"/>
+</svg>
