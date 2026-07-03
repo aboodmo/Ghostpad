@@ -16,6 +16,7 @@ struct EditorView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
     @AppStorage("editorFontSize") private var fontSize: Double = 15
     @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
+    @AppStorage("clickThrough") private var clickThrough: Bool = false
 
     @State private var showSidebar: Bool
     @State private var notePendingDelete: Note?
@@ -57,16 +58,9 @@ struct EditorView: View {
         .opacity(isFocused ? 1.0 : 0.88)
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .overlay(
-            // The edge follows corporeality: fainter while the panel is a
-            // whisper, more defined as it solidifies.
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(
-                    theme.text.opacity((isFocused ? 0.16 : 0.07) * (0.6 + 0.4 * opacity)),
-                    lineWidth: 1
-                )
-        )
+        .overlay(borderOverlay)
         .animation(.easeInOut(duration: 0.45), value: isFocused)
+        .animation(.easeInOut(duration: 0.25), value: clickThrough)
         .background(shortcutButtons)
         // Summoned via hotkey/menu: put the cursor in the note immediately,
         // so the flow is hotkey → type, with no click in between.
@@ -88,6 +82,22 @@ struct EditorView: View {
         }
     }
 
+    /// The panel's most dangerous state must never be invisible: while the
+    /// mouse passes through, the edge turns to a dashed accent line.
+    @ViewBuilder private var borderOverlay: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if clickThrough {
+            shape.strokeBorder(theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+        } else {
+            // The edge follows corporeality: fainter while the panel is a
+            // whisper, more defined as it solidifies.
+            shape.strokeBorder(
+                theme.text.opacity((isFocused ? 0.16 : 0.07) * (0.6 + 0.4 * opacity)),
+                lineWidth: 1
+            )
+        }
+    }
+
     // MARK: - Toolbar
 
     private var toolbar: some View {
@@ -98,6 +108,11 @@ struct EditorView: View {
             .keyboardShortcut("b", modifiers: .command)
 
             Spacer(minLength: 8)
+
+            if clickThrough {
+                phasedBadge
+                Spacer(minLength: 8)
+            }
 
             FogDial(opacity: $opacity, tint: theme.text)
 
@@ -111,6 +126,24 @@ struct EditorView: View {
         .padding(.trailing, 12)
         .frame(height: 32)
         .foregroundColor(theme.text.opacity(0.85))
+    }
+
+    /// Shown while click-through is on. Since the panel can't be clicked in
+    /// this state, the badge is pure signal — and it names the way out.
+    private var phasedBadge: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "cursorarrow.slash")
+                .font(.system(size: 10, weight: .medium))
+            Text("Click-through · \(Shortcut.load(prefix: AppSettings.clickThroughHotKey).display) to exit")
+                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                .lineLimit(1)
+        }
+        .foregroundColor(theme.accent)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 3.5)
+        .background(Capsule(style: .continuous).fill(theme.accent.opacity(0.12)))
+        .overlay(Capsule(style: .continuous).strokeBorder(theme.accent.opacity(0.35), lineWidth: 1))
+        .transition(.opacity.combined(with: .scale(scale: 0.94)))
     }
 
     private func toolbarButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {

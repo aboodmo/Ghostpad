@@ -111,9 +111,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     }
 
     // Click-through: the panel ignores the mouse so clicks reach the app behind.
-    // Recoverable only from the menu bar / Settings, never by clicking the panel.
+    // Recoverable from the global hotkey and the menu bar, never by clicking
+    // the panel. The status icon flips too, so the state is glanceable even
+    // when the panel is off-screen.
     private func applyClickThrough() {
-        panel?.ignoresMouseEvents = UserDefaults.standard.bool(forKey: AppSettings.clickThrough.key)
+        let phased = UserDefaults.standard.bool(forKey: AppSettings.clickThrough.key)
+        panel?.ignoresMouseEvents = phased
+        statusItem?.button?.image = statusImage(phased: phased)
+    }
+
+    private func statusImage(phased: Bool) -> NSImage? {
+        let image = NSImage(
+            systemSymbolName: phased ? "cursorarrow.slash" : "note.text",
+            accessibilityDescription: phased ? "Ghostpad (click-through)" : "Ghostpad"
+        )
+        image?.isTemplate = true
+        return image
     }
 
     // Materiality: a near-solid panel casts a real window shadow; a translucent
@@ -156,8 +169,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Ghostpad")
-        item.button?.image?.isTemplate = true
+        item.button?.image = statusImage(
+            phased: UserDefaults.standard.bool(forKey: AppSettings.clickThrough.key)
+        )
 
         let menu = NSMenu()
         menu.delegate = self
