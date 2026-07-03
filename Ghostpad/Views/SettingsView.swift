@@ -11,7 +11,6 @@
 
 import SwiftUI
 import AppKit
-import Carbon.HIToolbox
 
 struct SettingsView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
@@ -30,16 +29,11 @@ struct SettingsView: View {
     @AppStorage("hotkey.clickThrough.modifiers") private var ctModifiers: Int = Shortcut.defaultClickThrough.modifiers
     @AppStorage("hotkey.clickThrough.label") private var ctLabel: String = Shortcut.defaultClickThrough.label
 
-    private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
+    // Set by the AppDelegate when the OS refuses a combo (owned by another app).
+    @AppStorage("hotkey.showHide.failed") private var hkFailed: Bool = false
+    @AppStorage("hotkey.clickThrough.failed") private var ctFailed: Bool = false
 
-    // The built-in editor shortcuts — shown read-only for reference.
-    private let builtIns: [(String, Shortcut)] = [
-        ("Toggle Sidebar", Shortcut(keyCode: kVK_ANSI_B, modifiers: cmdKey, label: "B")),
-        ("New Note",       Shortcut(keyCode: kVK_ANSI_N, modifiers: cmdKey, label: "N")),
-        ("Delete Note",    Shortcut(keyCode: kVK_Delete, modifiers: cmdKey, label: "⌫")),
-        ("Opacity Up",     Shortcut(keyCode: kVK_UpArrow, modifiers: cmdKey, label: "↑")),
-        ("Opacity Down",   Shortcut(keyCode: kVK_DownArrow, modifiers: cmdKey, label: "↓")),
-    ]
+    private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
 
     private var showHide: Binding<Shortcut> {
         Binding(
@@ -60,7 +54,7 @@ struct SettingsView: View {
     private func warning(for s: Shortcut, against other: Shortcut) -> String? {
         if s.matches(other) { return "Same as another Ghostpad hotkey." }
         if s.conflictsWithSystemShortcut { return "May conflict with a macOS system shortcut." }
-        if builtIns.contains(where: { $0.1.matches(s) }) { return "Overlaps a built-in editor shortcut." }
+        if Shortcut.builtIns.contains(where: { $0.shortcut.matches(s) }) { return "Overlaps a built-in editor shortcut." }
         return nil
     }
 
@@ -133,12 +127,12 @@ struct SettingsView: View {
     private var shortcutsCard: some View {
         card("Shortcuts") {
             hotKeyRow("macwindow.on.rectangle", "Show / Hide Ghostpad",
-                      binding: showHide, against: clickThroughKey.wrappedValue)
+                      binding: showHide, against: clickThroughKey.wrappedValue, failed: hkFailed)
             divider
             hotKeyRow("cursorarrow.rays", "Toggle Click-Through",
-                      binding: clickThroughKey, against: showHide.wrappedValue)
+                      binding: clickThroughKey, against: showHide.wrappedValue, failed: ctFailed)
 
-            ForEach(builtIns, id: \.0) { name, sc in
+            ForEach(Shortcut.builtIns, id: \.name) { name, sc in
                 divider
                 builtInRow(name, sc.display)
             }
@@ -166,23 +160,32 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func hotKeyRow(_ icon: String, _ title: String,
-                           binding: Binding<Shortcut>, against other: Shortcut) -> some View {
+                           binding: Binding<Shortcut>, against other: Shortcut,
+                           failed: Bool) -> some View {
         row(icon, title) {
             ShortcutRecorder(shortcut: binding, theme: theme)
         }
-        if let warning = warning(for: binding.wrappedValue, against: other) {
-            HStack(spacing: 7) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.orange)
-                Text(warning)
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.text.opacity(0.65))
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 10)
+        if failed {
+            // Registration was refused — this is an error, not a maybe.
+            notice("xmark.octagon.fill", .red,
+                   "Couldn't register — another app owns this shortcut. Pick a different one.")
+        } else if let warning = warning(for: binding.wrappedValue, against: other) {
+            notice("exclamationmark.triangle.fill", .orange, warning)
         }
+    }
+
+    private func notice(_ icon: String, _ color: Color, _ text: String) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(color)
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundColor(theme.text.opacity(0.65))
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
     }
 
     private func builtInRow(_ name: String, _ combo: String) -> some View {
@@ -298,15 +301,11 @@ private struct ShortcutRecorder: View {
 
     private func start() {
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
-            if Int(event.keyCode) == kVK_Escape {
+            if Shortcut.isEscape(event) {
                 recording = false
                 return nil
             }
-            let candidate = Shortcut(
-                keyCode: Int(event.keyCode),
-                modifiers: carbonModifiers(event.modifierFlags),
-                label: keyLabel(event)
-            )
+            let candidate = Shortcut(event: event)
             // Ignore presses without a real modifier; keep recording.
             if candidate.hasRequiredModifier {
                 shortcut = candidate
@@ -319,31 +318,6 @@ private struct ShortcutRecorder: View {
     private func stop() {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
-    }
-
-    private func carbonModifiers(_ flags: NSEvent.ModifierFlags) -> Int {
-        var m = 0
-        if flags.contains(.command) { m |= cmdKey }
-        if flags.contains(.option)  { m |= optionKey }
-        if flags.contains(.control) { m |= controlKey }
-        if flags.contains(.shift)   { m |= shiftKey }
-        return m
-    }
-
-    private func keyLabel(_ event: NSEvent) -> String {
-        switch Int(event.keyCode) {
-        case kVK_Space:      return "Space"
-        case kVK_Return:     return "↩"
-        case kVK_Tab:        return "⇥"
-        case kVK_Delete:     return "⌫"
-        case kVK_LeftArrow:  return "←"
-        case kVK_RightArrow: return "→"
-        case kVK_UpArrow:    return "↑"
-        case kVK_DownArrow:  return "↓"
-        default:
-            let s = event.charactersIgnoringModifiers ?? ""
-            return s.isEmpty ? "Key \(event.keyCode)" : s.uppercased()
-        }
     }
 }
 
