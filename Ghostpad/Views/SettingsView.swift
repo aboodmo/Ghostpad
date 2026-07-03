@@ -11,6 +11,7 @@
 
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 struct SettingsView: View {
     @AppStorage("panelOpacity") private var opacity: Double = 0.6
@@ -32,6 +33,9 @@ struct SettingsView: View {
     // Set by the AppDelegate when the OS refuses a combo (owned by another app).
     @AppStorage("hotkey.showHide.failed") private var hkFailed: Bool = false
     @AppStorage("hotkey.clickThrough.failed") private var ctFailed: Bool = false
+
+    // Login-item state lives with the OS (SMAppService), not in defaults.
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private var theme: Theme { Theme(rawValue: themeRaw) ?? .vapor }
 
@@ -65,13 +69,7 @@ struct SettingsView: View {
                     .font(.system(size: 22, weight: .semibold, design: .serif))
 
                 card("Appearance") {
-                    row("paintpalette", "Theme") {
-                        Picker("", selection: $themeRaw) {
-                            ForEach(Theme.allCases) { t in Text(t.name).tag(t.rawValue) }
-                        }
-                        .labelsHidden()
-                        .frame(width: 168)
-                    }
+                    themeGrid
                     divider
                     row("circle.lefthalf.filled", "Opacity") {
                         HStack(spacing: 10) {
@@ -91,7 +89,7 @@ struct SettingsView: View {
 
                 shortcutsCard
 
-                card("Window") {
+                card("Behavior") {
                     row("pin", "Keep always on top") {
                         Toggle("", isOn: $alwaysOnTop)
                             .labelsHidden()
@@ -109,17 +107,82 @@ struct SettingsView: View {
                             .labelsHidden()
                             .toggleStyle(.switch)
                     }
+                    divider
+                    row("power", "Launch at login") {
+                        Toggle("", isOn: $launchAtLogin)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
                 }
 
                 footer
             }
             .padding(26)
         }
-        .frame(width: 460, height: 580)
+        .frame(width: 460, height: 620)
+        .onChange(of: launchAtLogin) { _, wantOn in
+            // Registration can fail (e.g. unsigned dev builds); reflect reality.
+            do {
+                wantOn ? try SMAppService.mainApp.register()
+                       : try SMAppService.mainApp.unregister()
+            } catch {
+                launchAtLogin = SMAppService.mainApp.status == .enabled
+            }
+        }
         .background(theme.background)
         .foregroundColor(theme.text)
         .tint(theme.accent)
         .preferredColorScheme(theme.isDark ? .dark : .light)
+    }
+
+    // MARK: - Theme swatches
+
+    /// Every theme shown as a live tile — its background, its text ("Aa" in
+    /// the editor serif), its accent dot — instead of a list of names. The
+    /// selected tile rings itself in its own accent.
+    private var themeGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 10) {
+            ForEach(Theme.allCases) { t in
+                themeTile(t)
+            }
+        }
+        .padding(14)
+    }
+
+    private func themeTile(_ t: Theme) -> some View {
+        let selected = t.rawValue == themeRaw
+        return Button { themeRaw = t.rawValue } label: {
+            VStack(spacing: 5) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(t.background)
+                    HStack(spacing: 4) {
+                        Text("Aa")
+                            .font(.system(size: 13, weight: .semibold, design: .serif))
+                            .foregroundColor(t.text)
+                        Circle()
+                            .fill(t.accent)
+                            .frame(width: 5, height: 5)
+                    }
+                }
+                .frame(height: 38)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(
+                            selected ? t.accent : theme.text.opacity(0.15),
+                            lineWidth: selected ? 2 : 1
+                        )
+                )
+                Text(t.name)
+                    .font(.system(size: 9.5))
+                    .foregroundColor(theme.text.opacity(selected ? 0.9 : 0.5))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(t.name)
     }
 
     // MARK: - Shortcuts
