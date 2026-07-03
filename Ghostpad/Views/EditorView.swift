@@ -18,7 +18,7 @@ struct EditorView: View {
     @AppStorage("theme") private var themeRaw: String = Theme.vapor.rawValue
     @AppStorage("clickThrough") private var clickThrough: Bool = false
 
-    @State private var showSidebar: Bool
+    @State private var showSidebar = true
     @State private var notePendingDelete: Note?
 
     // Drives "breathing focus": .key when the panel is frontmost, dimmer otherwise.
@@ -28,11 +28,6 @@ struct EditorView: View {
     // The editor is split into a title line and the body beneath it.
     private enum Field { case title, body }
     @FocusState private var focus: Field?
-
-    init(store: NoteStore, showSidebar: Bool = false) {
-        _store = ObservedObject(wrappedValue: store)
-        _showSidebar = State(initialValue: showSidebar)
-    }
 
     private let cornerRadius: CGFloat = 16
     private let sidebarWidth: CGFloat = 184
@@ -50,7 +45,13 @@ struct EditorView: View {
                         .background(sidebarBackground)
                         .overlay(alignment: .trailing) { vHairline }
                 }
-                editor
+                if store.activeNote != nil {
+                    editor
+                } else {
+                    // No active note (last one deleted): typing would go
+                    // nowhere, so say so instead of presenting a dead editor.
+                    emptyState
+                }
             }
         }
         // Breathing focus: content settles back when the panel isn't key and
@@ -203,8 +204,26 @@ struct EditorView: View {
         .padding(.bottom, 12)
     }
 
+    private var emptyState: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "moon.stars")
+                .font(.system(size: 26, weight: .light))
+                .foregroundColor(theme.text.opacity(0.3))
+            Text("Nothing here")
+                .font(.system(size: 15, design: .serif))
+                .foregroundColor(theme.text.opacity(0.5))
+            Button("New Note  ⌘N") { store.create() }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(theme.accent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     // First line of the body is the title; the rest is the body. Both write
     // back into the single stored `body` string, so the Note model is untouched.
+    // (A multiline paste into the title self-heals: the write joins it with the
+    // rest, and the next split pushes everything after the first line down.)
     private func split(_ body: String) -> (title: String, rest: String) {
         if let i = body.firstIndex(of: "\n") {
             return (String(body[..<i]), String(body[body.index(after: i)...]))
@@ -322,10 +341,13 @@ struct EditorView: View {
                 Button("") { notePendingDelete = store.activeNote }
                     .keyboardShortcut(.delete, modifiers: .command)
             }
+            // ⌥⌘ arrows, not ⌘ arrows: plain ⌘↑/⌘↓ are jump-to-start/end of
+            // document in every Mac text view — stealing them inside a text
+            // app is hostile.
             Button("") { nudge(+0.05) }
-                .keyboardShortcut(.upArrow, modifiers: .command)
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option])
             Button("") { nudge(-0.05) }
-                .keyboardShortcut(.downArrow, modifiers: .command)
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option])
         }
         .frame(width: 0, height: 0)
         .opacity(0)
@@ -457,7 +479,7 @@ private struct FogDial: View {
         .background(NonWindowDragging())
         .animation(.easeOut(duration: 0.18), value: revealed)
         .onHover { hovering = $0 }
-        .help("Opacity (⌘↑ / ⌘↓)")
+        .help("Opacity (⌥⌘↑ / ⌥⌘↓)")
     }
 
     private var track: some View {
@@ -501,5 +523,5 @@ private struct FogDial: View {
     ]))
     store.loadAll()
     store.activeNoteID = store.notes.first?.id
-    return EditorView(store: store, showSidebar: true)
+    return EditorView(store: store)
 }

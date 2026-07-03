@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
         let panel = FloatingPanel(
             contentRect: NSRect(x: 200, y: 200, width: 760, height: 640),
-            content: EditorView(store: store, showSidebar: true)
+            content: EditorView(store: store)
         )
         panel.delegate = self
         self.panel = panel

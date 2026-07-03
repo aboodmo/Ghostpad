@@ -129,8 +129,8 @@ struct Shortcut: Equatable {
         ("Toggle Sidebar", Shortcut(keyCode: kVK_ANSI_B, modifiers: cmdKey, label: "B")),
         ("New Note",       Shortcut(keyCode: kVK_ANSI_N, modifiers: cmdKey, label: "N")),
         ("Delete Note",    Shortcut(keyCode: kVK_Delete, modifiers: cmdKey, label: "⌫")),
-        ("Opacity Up",     Shortcut(keyCode: kVK_UpArrow, modifiers: cmdKey, label: "↑")),
-        ("Opacity Down",   Shortcut(keyCode: kVK_DownArrow, modifiers: cmdKey, label: "↓")),
+        ("Opacity Up",     Shortcut(keyCode: kVK_UpArrow, modifiers: cmdKey | optionKey, label: "↑")),
+        ("Opacity Down",   Shortcut(keyCode: kVK_DownArrow, modifiers: cmdKey | optionKey, label: "↓")),
     ]
 
     /// Best-effort only: macOS exposes no API to enumerate every global
