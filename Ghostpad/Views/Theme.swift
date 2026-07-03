@@ -88,12 +88,29 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Accent for the rare, meaningful highlight (the active note). Most themes
-    /// stay monochrome (accent == text); Vapor gets its cold electric blue.
+    /// Accent for the rare, meaningful highlight: the active note's edge
+    /// marker, pins, focus, recording state. Every theme carries its
+    /// *canonical* accent — the color that palette is known by — so choosing
+    /// a theme is choosing a full identity, not just a background. Charcoal
+    /// alone stays deliberately monochrome; it's the no-color option.
     var accent: Color {
         switch self {
-        case .vapor: return Color(hex: 0x6EA8FF)
-        default:     return text
+        case .vapor:           return Color(hex: 0x6EA8FF) // cold electric blue
+        case .charcoal:        return .white               // true monochrome, by design
+        case .dracula:         return Color(hex: 0xBD93F9) // purple
+        case .nord:            return Color(hex: 0x88C0D0) // frost
+        case .tokyoNight:      return Color(hex: 0x7AA2F7) // blue
+        case .catppuccinMocha: return Color(hex: 0xCBA6F7) // mauve
+        case .gruvbox:         return Color(hex: 0xFE8019) // orange
+        case .solarizedDark:   return Color(hex: 0x268BD2) // blue
+        case .oneDark:         return Color(hex: 0x61AFEF) // blue
+        case .everforest:      return Color(hex: 0xA7C080) // green
+        case .rosePine:        return Color(hex: 0xEBBCBA) // rose
+        case .monokai:         return Color(hex: 0xF92672) // magenta
+        case .solarizedLight:  return Color(hex: 0x268BD2) // blue
+        case .catppuccinLatte: return Color(hex: 0x1E66F5) // blue
+        case .sepia:           return Color(hex: 0xA0522D) // sienna
+        case .light:           return Color(hex: 0x0A84FF) // system blue
         }
     }
 
@@ -107,7 +124,10 @@ enum Theme: String, CaseIterable, Identifiable {
         case .tokyoNight:      return Color(hex: 0xC0CAF5)
         case .catppuccinMocha: return Color(hex: 0xCDD6F4)
         case .gruvbox:         return Color(hex: 0xEBDBB2)
-        case .solarizedDark:   return Color(hex: 0x93A1A1)
+        // One step brighter than canonical base1 (0x93A1A1): Solarized is
+        // tuned for opaque backgrounds; ours must stay legible at 30% opacity
+        // over a busy screen.
+        case .solarizedDark:   return Color(hex: 0xB5C2C2)
         case .oneDark:         return Color(hex: 0xABB2BF)
         case .everforest:      return Color(hex: 0xD3C6AA)
         case .rosePine:        return Color(hex: 0xE0DEF4)
