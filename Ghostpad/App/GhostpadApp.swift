@@ -211,6 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     @objc private func togglePanel() {
         guard let panel else { return }
         if panel.isVisible {
+            store.flush() // hiding is a natural save point
             panel.orderOut(nil)
         } else {
             panel.makeKeyAndOrderFront(nil)
@@ -255,8 +256,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         false
     }
 
+    // Disk writes are debounced 500ms; quitting inside that window must not
+    // lose the last edit.
+    func applicationWillTerminate(_ notification: Notification) {
+        store.flush()
+    }
+
     // Red close button hides the panel to the menu bar instead of closing it.
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        store.flush()
         panel?.orderOut(nil)
         return false
     }

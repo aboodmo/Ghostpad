@@ -231,16 +231,9 @@ struct EditorView: View {
         }
     }
 
-    /// First body line after the title line, used as the row's preview.
+    /// The row's preview line (model-provided), with a quiet fallback.
     private func snippet(of note: Note) -> String {
-        var sawTitle = false
-        for raw in note.body.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = raw.trimmingCharacters(in: .whitespaces)
-            if line.isEmpty { continue }
-            if !sawTitle { sawTitle = true; continue }
-            return line
-        }
-        return "No additional text"
+        note.preview ?? "No additional text"
     }
 
     // The whole panel already carries the blur + tint; the sidebar just adds a

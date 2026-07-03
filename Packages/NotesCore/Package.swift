@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "NotesCore", targets: ["NotesCore"])
     ],
     targets: [
-        .target(name: "NotesCore")
+        .target(name: "NotesCore"),
+        .testTarget(name: "NotesCoreTests", dependencies: ["NotesCore"])
     ]
 )

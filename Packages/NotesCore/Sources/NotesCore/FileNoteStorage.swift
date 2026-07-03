@@ -1,28 +1,38 @@
 //
 //  FileNoteStorage.swift
-//  Ghostpad
+//  NotesCore
 //
-//  Disk-backed NoteStorage: one markdown file per note in Application Support,
-//  with a small JSON sidecar holding timestamps (keeps the .md pure markdown).
+//  Disk-backed NoteStorage: one markdown file per note, with a small JSON
+//  sidecar holding timestamps + pin state (keeps the .md pure markdown).
+//  Pure Foundation, so it lives with the model and is tested directly.
 //
 
 import Foundation
-import NotesCore
 
-struct FileNoteStorage: NoteStorage {
+public struct FileNoteStorage: NoteStorage {
     private let directory: URL
     private let fileManager: FileManager
 
-    init(fileManager: FileManager = .default) {
-        self.fileManager = fileManager
+    /// Production location: Application Support/Ghostpad/notes (inside the
+    /// sandbox container when the app is sandboxed).
+    public init(fileManager: FileManager = .default) {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        directory = appSupport
-            .appendingPathComponent("Ghostpad", isDirectory: true)
-            .appendingPathComponent("notes", isDirectory: true)
+        self.init(
+            directory: appSupport
+                .appendingPathComponent("Ghostpad", isDirectory: true)
+                .appendingPathComponent("notes", isDirectory: true),
+            fileManager: fileManager
+        )
+    }
+
+    /// Injectable root — tests point this at a temporary directory.
+    public init(directory: URL, fileManager: FileManager = .default) {
+        self.fileManager = fileManager
+        self.directory = directory
         try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
-    func loadAll() throws -> [Note] {
+    public func loadAll() throws -> [Note] {
         let urls = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
         let notes: [Note] = urls
             .filter { $0.pathExtension == "md" }
@@ -41,13 +51,13 @@ struct FileNoteStorage: NoteStorage {
         return notes.sorted { $0.modifiedAt > $1.modifiedAt }
     }
 
-    func save(_ note: Note) throws {
+    public func save(_ note: Note) throws {
         try note.body.write(to: bodyURL(note.id), atomically: true, encoding: .utf8)
         let data = try JSONEncoder().encode(Metadata(createdAt: note.createdAt, modifiedAt: note.modifiedAt, isPinned: note.isPinned))
         try data.write(to: metaURL(note.id), options: .atomic)
     }
 
-    func delete(id: UUID) throws {
+    public func delete(id: UUID) throws {
         try? fileManager.removeItem(at: bodyURL(id))
         try? fileManager.removeItem(at: metaURL(id))
     }

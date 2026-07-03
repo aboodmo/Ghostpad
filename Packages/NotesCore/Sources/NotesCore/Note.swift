@@ -39,14 +39,28 @@ public struct Note: Identifiable, Codable, Equatable {
         isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
     }
 
-    /// First non-empty, trimmed line of the body, or "Untitled".
+    /// The title is exactly the first line of the body, trimmed — the same
+    /// line the editor's title field edits — or "Untitled" when it's blank.
+    /// (It is deliberately NOT "first non-empty line": the sidebar and the
+    /// title field must always agree on what the title is.)
     public var title: String {
-        for line in body.split(separator: "\n", omittingEmptySubsequences: false) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if !trimmed.isEmpty {
-                return trimmed
-            }
+        let first = body.prefix(while: { $0 != "\n" }).trimmingCharacters(in: .whitespaces)
+        return first.isEmpty ? "Untitled" : first
+    }
+
+    /// First non-empty line after the title line — the sidebar's preview text.
+    public var preview: String? {
+        var isFirstLine = true
+        for raw in body.split(separator: "\n", omittingEmptySubsequences: false) {
+            if isFirstLine { isFirstLine = false; continue }
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if !line.isEmpty { return String(line) }
         }
-        return "Untitled"
+        return nil
+    }
+
+    /// True when the note holds no content at all (whitespace doesn't count).
+    public var isEmpty: Bool {
+        body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

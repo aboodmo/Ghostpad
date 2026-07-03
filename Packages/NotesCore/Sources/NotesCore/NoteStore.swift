@@ -18,6 +18,10 @@ public final class NoteStore: ObservableObject {
     private let saveSubject = PassthroughSubject<UUID, Never>()
     private var cancellables = Set<AnyCancellable>()
 
+    /// Edits whose disk write is still waiting on the debounce. `flush()`
+    /// drains this so quitting/hiding never loses the last keystrokes.
+    private var pendingSaveIDs = Set<UUID>()
+
     public init(storage: NoteStorage) {
         self.storage = storage
 
@@ -41,9 +45,14 @@ public final class NoteStore: ObservableObject {
         notes = ((try? storage.loadAll()) ?? []).sorted { $0.modifiedAt > $1.modifiedAt }
     }
 
-    /// Create a new empty note, persist it, make it active, and return it.
+    /// Make an empty note active and return it. Reuses an existing empty note
+    /// if there is one, so mashing "New Note" never breeds Untitled duplicates.
     @discardableResult
     public func create() -> Note {
+        if let existing = notes.first(where: { $0.isEmpty }) {
+            activeNoteID = existing.id
+            return existing
+        }
         let note = Note(body: "")
         try? storage.save(note)
         notes.insert(note, at: 0)
@@ -53,6 +62,7 @@ public final class NoteStore: ObservableObject {
 
     /// Delete a note; if it was active, fall back to the first remaining note.
     public func delete(id: UUID) {
+        pendingSaveIDs.remove(id)
         try? storage.delete(id: id)
         notes.removeAll { $0.id == id }
         if activeNoteID == id {
@@ -76,10 +86,19 @@ public final class NoteStore: ObservableObject {
         guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
         notes[idx].body = body
         notes[idx].modifiedAt = Date()
+        pendingSaveIDs.insert(id)
         saveSubject.send(id)
     }
 
+    /// Write every edit still waiting on the debounce, right now. Called when
+    /// the app terminates or the panel hides — a note-taking app must never
+    /// lose the sentence typed in the last half-second.
+    public func flush() {
+        for id in pendingSaveIDs { persist(id) }
+    }
+
     private func persist(_ id: UUID) {
+        pendingSaveIDs.remove(id)
         guard let note = notes.first(where: { $0.id == id }) else { return }
         try? storage.save(note)
     }

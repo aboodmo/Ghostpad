@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		AA00000000000000000000D3 /* NotesCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000D2 /* NotesCore */; };
 		2FA2797A2FD27A7A0010F74E /* GhostpadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA279792FD27A7A0010F74E /* GhostpadApp.swift */; };
-		AA00000000000000000000C6 /* FileNoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B6 /* FileNoteStorage.swift */; };
-		AA00000000000000000000C7 /* InMemoryNoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B7 /* InMemoryNoteStorage.swift */; };
 		AA00000000000000000000C4 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B4 /* EditorView.swift */; };
 		AA00000000000000000000C8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B8 /* SettingsView.swift */; };
 		AA00000000000000000000C9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000B9 /* Theme.swift */; };
@@ -24,8 +22,6 @@
 /* Begin PBXFileReference section */
 		2FA279762FD27A7A0010F74E /* Ghostpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ghostpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2FA279792FD27A7A0010F74E /* GhostpadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostpadApp.swift; sourceTree = "<group>"; };
-		AA00000000000000000000B6 /* FileNoteStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileNoteStorage.swift; sourceTree = "<group>"; };
-		AA00000000000000000000B7 /* InMemoryNoteStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryNoteStorage.swift; sourceTree = "<group>"; };
 		AA00000000000000000000B4 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		AA00000000000000000000B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA00000000000000000000B9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -71,7 +67,6 @@
 				AA00000000000000000000A1 /* App */,
 				AA00000000000000000000A4 /* Views */,
 				AA00000000000000000000A5 /* Window */,
-				AA00000000000000000000A6 /* Storage */,
 				2FA2797D2FD27A7B0010F74E /* Assets.xcassets */,
 				2FA279822FD27A7B0010F74E /* Ghostpad.entitlements */,
 				2FA2797F2FD27A7B0010F74E /* Preview Content */,
@@ -86,15 +81,6 @@
 				2FA279792FD27A7A0010F74E /* GhostpadApp.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		AA00000000000000000000A6 /* Storage */ = {
-			isa = PBXGroup;
-			children = (
-				AA00000000000000000000B6 /* FileNoteStorage.swift */,
-				AA00000000000000000000B7 /* InMemoryNoteStorage.swift */,
-			);
-			path = Storage;
 			sourceTree = "<group>";
 		};
 		AA00000000000000000000A4 /* Views */ = {
@@ -202,8 +188,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2FA2797A2FD27A7A0010F74E /* GhostpadApp.swift in Sources */,
-				AA00000000000000000000C6 /* FileNoteStorage.swift in Sources */,
-				AA00000000000000000000C7 /* InMemoryNoteStorage.swift in Sources */,
 				AA00000000000000000000C4 /* EditorView.swift in Sources */,
 				AA00000000000000000000C8 /* SettingsView.swift in Sources */,
 				AA00000000000000000000C9 /* Theme.swift in Sources */,
