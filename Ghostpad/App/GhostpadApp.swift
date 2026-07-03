@@ -14,6 +14,9 @@ import NotesCore
 extension Notification.Name {
     /// Posted by in-app UI (e.g. the toolbar gear) to open the Settings window.
     static let ghostpadOpenSettings = Notification.Name("ghostpad.openSettings")
+    /// Posted after the panel materializes, so the editor can take focus —
+    /// summon-and-type with no click in between.
+    static let ghostpadSummoned = Notification.Name("ghostpad.summoned")
 }
 
 @main
@@ -64,10 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         // saved frame (no-op on first run); setFrameAutosaveName keeps it saved.
         panel.setFrameUsingName("GhostpadPanel")
         panel.setFrameAutosaveName("GhostpadPanel")
+        panel.onCancel = { [weak self] in self?.hidePanel() } // Esc banishes
         applyWindowLevel()
         applyCaptureExclusion()
         applyClickThrough()
-        panel.makeKeyAndOrderFront(nil)
+        applyMateriality()
+        showPanel()
 
         setupStatusItem()
         applyHotKeys() // system-wide hotkeys, read from settings
@@ -80,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                 self?.applyWindowLevel()
                 self?.applyCaptureExclusion()
                 self?.applyClickThrough()
+                self?.applyMateriality()
                 self?.applyHotKeys()
             }
         }
@@ -108,6 +114,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     // Recoverable only from the menu bar / Settings, never by clicking the panel.
     private func applyClickThrough() {
         panel?.ignoresMouseEvents = UserDefaults.standard.bool(forKey: AppSettings.clickThrough.key)
+    }
+
+    // Materiality: a near-solid panel casts a real window shadow; a translucent
+    // one floats shadowless. Guarded so opacity drags only pay on the crossing.
+    private func applyMateriality() {
+        guard let panel else { return }
+        let solid = UserDefaults.standard.double(forKey: AppSettings.panelOpacity.key) >= 0.85
+        if panel.hasShadow != solid {
+            panel.hasShadow = solid
+            panel.invalidateShadow()
+        }
     }
 
     // Register (or re-register) the global hotkeys from settings. Guarded per
@@ -198,17 +215,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     @objc private func togglePanel() {
         guard let panel else { return }
-        if panel.isVisible {
-            store.flush() // hiding is a natural save point
-            panel.orderOut(nil)
-        } else {
-            panel.makeKeyAndOrderFront(nil)
-        }
+        panel.isVisible ? hidePanel() : showPanel()
+    }
+
+    private func showPanel() {
+        panel?.summon()
+        // Let the editor take focus so summon-and-type needs no click.
+        NotificationCenter.default.post(name: .ghostpadSummoned, object: nil)
+    }
+
+    private func hidePanel() {
+        store.flush() // hiding is a natural save point
+        panel?.banish()
     }
 
     @objc private func newNote() {
         store.create()
-        panel?.makeKeyAndOrderFront(nil)
+        showPanel()
     }
 
     @objc private func toggleClickThrough() {
@@ -252,8 +275,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     // Red close button hides the panel to the menu bar instead of closing it.
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        store.flush()
-        panel?.orderOut(nil)
+        hidePanel()
         return false
     }
 }

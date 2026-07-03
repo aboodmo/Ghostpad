@@ -58,11 +58,21 @@ struct EditorView: View {
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
+            // The edge follows corporeality: fainter while the panel is a
+            // whisper, more defined as it solidifies.
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(theme.text.opacity(isFocused ? 0.16 : 0.07), lineWidth: 1)
+                .strokeBorder(
+                    theme.text.opacity((isFocused ? 0.16 : 0.07) * (0.6 + 0.4 * opacity)),
+                    lineWidth: 1
+                )
         )
         .animation(.easeInOut(duration: 0.45), value: isFocused)
         .background(shortcutButtons)
+        // Summoned via hotkey/menu: put the cursor in the note immediately,
+        // so the flow is hotkey → type, with no click in between.
+        .onReceive(NotificationCenter.default.publisher(for: .ghostpadSummoned)) { _ in
+            focus = .body
+        }
         .alert(
             "Delete note?",
             isPresented: Binding(
@@ -116,6 +126,14 @@ struct EditorView: View {
 
     // MARK: - Editor
 
+    // Legibility halo: as the backing fades below ~55%, a faint counter-shadow
+    // hugs the glyphs so text survives a busy background; it disappears
+    // entirely once the panel is substantial enough to do that job itself.
+    private var haloStrength: Double { max(0, (0.55 - opacity) / 0.45) }
+    private var halo: Color {
+        (theme.isDark ? Color.black : .white).opacity(0.6 * haloStrength)
+    }
+
     private var editor: some View {
         VStack(alignment: .leading, spacing: 9) {
             // The note titles itself: the first line is a large serif heading.
@@ -123,6 +141,7 @@ struct EditorView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: fontSize + 8, weight: .semibold, design: .serif))
                 .foregroundColor(theme.text)
+                .shadow(color: halo, radius: 1.4, y: 0.5)
                 .focused($focus, equals: .title)
                 .onSubmit { focus = .body }
 
@@ -133,6 +152,7 @@ struct EditorView: View {
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.never)
                 .foregroundColor(theme.text)
+                .shadow(color: halo, radius: 1.4, y: 0.5)
                 .focused($focus, equals: .body)
                 .padding(.leading, -5) // align TextEditor's text inset with the title
                 .overlay(alignment: .topLeading) {
